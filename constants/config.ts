@@ -1,10 +1,13 @@
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:5000',
+  BASE_URL: 'http://192.168.1.128:5000',
   ENDPOINTS: {
-    VISION: '/imagem/vision',
-    GEMINI: '/imagem/gemini',
+    ANALISAR: '/analisar',
+    OCR: '/ler-texto',
+    DOCUMENTO: '/documento/processar-documento',
+    TTS: '/documento/gerar-audio-documento',
+    VOZES: '/documento/vozes-disponiveis',
   },
-  TIMEOUT: 30000, // 30 seconds
+  TIMEOUT: 30000,
 };
 
 export const SPEECH_CONFIG = {
