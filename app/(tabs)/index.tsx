@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -12,14 +12,46 @@ import {
 import { Camera, Upload, Volume2 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Speech from 'expo-speech';
-import { analisarImagem } from '@/services/image_service';
+import { analisarImagem } from '../../services/image_service';
+import Lumi from '../../components/Lumi';
+import { useLumiAssistant } from '../../hooks/useLumiAssistant';
+
+interface VisionLabel {
+  objeto: string;
+  confianca: number;
+}
+
+interface WebEntity {
+  descricao: string;
+  score: number;
+}
+
+interface VisionResponse {
+  labels: VisionLabel[];
+  web_entities: WebEntity[];
+}
+
+interface GeminiResponse {
+  objeto: string;
+  confianca: null;
+}
 
 export default function ImageUploadScreen() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [visionResult, setVisionResult] = useState<any | null>(null);
-  const [geminiResult, setGeminiResult] = useState<string | null>(null);
+  const [visionResults, setVisionResults] = useState<VisionResponse | null>(null);
+  const [geminiResults, setGeminiResults] = useState<GeminiResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // Hook do Lumi Assistant
+  const { currentMessage, isLumiVisible, lumiSays, clearMessage } = useLumiAssistant();
+
+  // Apresenta o Lumi quando o component carrega
+  useEffect(() => {
+    setTimeout(() => {
+      lumiSays.welcomeUser();
+    }, 1000);
+  }, []);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -30,8 +62,7 @@ export default function ImageUploadScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
+      allowsEditing: false,
       quality: 1,
     });
 
@@ -49,21 +80,23 @@ export default function ImageUploadScreen() {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
+      allowsEditing: false,
       quality: 1,
     });
 
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
+      lumiSays.photoButtonPressed();
       processImage(result.assets[0].uri);
     }
   };
 
 const processImage = async (imageUri: string) => {
   setLoading(true);
-  setVisionResult(null);
-  setGeminiResult(null);
+  setVisionResults(null);
+  setGeminiResults([]);
+  
+  lumiSays.imageProcessing();
 
   try {
     const analisarResponse = await analisarImagem(imageUri);
@@ -71,28 +104,33 @@ const processImage = async (imageUri: string) => {
     // Verifica se veio erro
     if ('erro' in analisarResponse) {
       Alert.alert('Erro', analisarResponse.erro);
+      lumiSays.errorOccurred();
       return;
     }
     // Verifica se é Vision
     if ('labels' in analisarResponse && 'web_entities' in analisarResponse) {
-      setVisionResult(analisarResponse);
+      setVisionResults(analisarResponse as VisionResponse);
     }
     // Verifica se é Gemini
     if ('objeto' in analisarResponse) {
-      setGeminiResult(analisarResponse.objeto);
+      setGeminiResults([analisarResponse as GeminiResponse]);
     }
+    
+    lumiSays.imageAnalyzed();
   } catch (error) {
     console.error('Error processing image:', error);
     Alert.alert('Erro', 'Não foi possível processar a imagem. Verifique se o servidor está rodando');
+    lumiSays.errorOccurred();
   } finally {
     setLoading(false);
   }
 };
 
   const speakDescription = async () => {
-    if (geminiResult) {
+    if (geminiResults.length > 0) {
       setIsSpeaking(true);
-      Speech.speak(geminiResult, {
+      lumiSays.speakButtonPressed();
+      Speech.speak(geminiResults[0].objeto, {
         language: 'pt-BR',
         onDone: () => setIsSpeaking(false),
         onError: () => setIsSpeaking(false),
@@ -119,48 +157,90 @@ const processImage = async (imageUri: string) => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.imageSection}>
           {selectedImage ? (
-            <Image source={{ uri: selectedImage }} style={styles.selectedImage} />
+            <Image 
+              source={{ uri: selectedImage }} 
+              style={styles.selectedImage} 
+              accessible={true}
+              accessibilityLabel="Imagem selecionada para análise"
+              accessibilityRole="image"
+            />
           ) : (
-            <View style={styles.placeholderImage}>
+            <View 
+              style={styles.placeholderImage}
+              accessible={true}
+              accessibilityLabel="Área para seleção de imagem"
+              accessibilityRole="button"
+            >
               <Camera size={48} color="#A0AEC0" />
-              <Text style={styles.placeholderText}>Nenhuma imagem selecionada</Text>
+              <Text 
+                style={styles.placeholderText}
+                accessible={true}
+                accessibilityLabel="Nenhuma imagem selecionada ainda"
+              >
+                Nenhuma imagem selecionada
+              </Text>
             </View>
           )}
         </View>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.actionButton} onPress={takePhoto}>
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={takePhoto}
+            accessible={true}
+            accessibilityLabel="Tirar Foto"
+            accessibilityRole="button"
+            accessibilityHint="Abre a câmera para tirar uma nova foto"
+          >
             <Camera size={20} color="#FFFFFF" />
             <Text style={styles.actionButtonText}>Tirar Foto</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={pickImage}>
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={pickImage}
+            accessible={true}
+            accessibilityLabel="Selecionar da Galeria"
+            accessibilityRole="button"
+            accessibilityHint="Abre a galeria para escolher uma imagem existente"
+          >
             <Upload size={20} color="#FFFFFF" />
             <Text style={styles.actionButtonText}>Galeria</Text>
           </TouchableOpacity>
         </View>
 
         {loading && (
-          <View style={styles.loadingContainer}>
+          <View 
+            style={styles.loadingContainer}
+            accessible={true}
+            accessibilityLabel="Processando imagem, aguarde"
+            accessibilityRole="progressbar"
+          >
             <ActivityIndicator size="large" color="#F7931E" />
-            <Text style={styles.loadingText}>Processando imagem...</Text>
+            <Text 
+              style={styles.loadingText}
+              accessible={true}
+              accessibilityLabel="Processando imagem, por favor aguarde"
+            >
+              Processando imagem...
+            </Text>
           </View>
         )}
 
-        {visionResult && (
+        {visionResults && (
           <View style={styles.resultsContainer}>
             <Text style={styles.sectionTitle}>Objetos Detectados</Text>
-            {visionResult.labels.map((label: any, index: number) => (
+            {visionResults.labels.map((label: any, index: number) => (
               <View key={index} style={styles.labelItem}>
                 <Text style={styles.labelText}>{label.objeto}</Text>
                 <Text style={styles.confidenceText}>{(label.confianca * 100).toFixed(0)}%</Text>
               </View>
             ))}
 
-            {visionResult.web_entities.length > 0 && (
+            {visionResults.web_entities.length > 0 && (
               <>
                 <Text style={styles.sectionTitle}>Entidades Web</Text>
-                {visionResult.web_entities.map((entity: any, index: number) => (
+                {visionResults.web_entities.map((entity: any, index: number) => (
                   <View key={index} style={styles.labelItem}>
                     <Text style={styles.labelText}>{entity.descricao}</Text>
                     <Text style={styles.confidenceText}>{(entity.score * 100).toFixed(0)}%</Text>
@@ -171,7 +251,7 @@ const processImage = async (imageUri: string) => {
           </View>
         )}
 
-        {geminiResult && (
+        {geminiResults.length > 0 && (
           <View style={styles.resultsContainer}>
             <View style={styles.descriptionHeader}>
               <Text style={styles.sectionTitle}>Descrição Completa</Text>
@@ -185,10 +265,20 @@ const processImage = async (imageUri: string) => {
                 </Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.descriptionText}>{geminiResult}</Text>
+            <Text style={styles.descriptionText}>
+              {geminiResults.length > 0 ? geminiResults[0].objeto : ''}
+            </Text>
           </View>
         )}
       </ScrollView>
+
+      {/* Componente do Lumi Assistant */}
+      {isLumiVisible && currentMessage && (
+        <Lumi 
+          message={currentMessage} 
+          onMessageComplete={clearMessage}
+        />
+      )}
     </View>
   );
 }

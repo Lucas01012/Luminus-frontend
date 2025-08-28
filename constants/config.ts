@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: 'http://192.168.1.128:5000',
+  BASE_URL: 'http://192.168.0.183:5000',
   ENDPOINTS: {
     ANALISAR: '/analisar',
     OCR: '/ler-texto',
