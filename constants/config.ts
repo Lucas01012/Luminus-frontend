@@ -1,5 +1,6 @@
 export const API_CONFIG = {
   BASE_URL: 'http://192.168.0.183:5000',
+  TTS_BASE_URL: 'http://192.168.0.183:5001', // Assumindo que TTS roda em porta diferente
   ENDPOINTS: {
     ANALISAR: '/analisar',
     OCR: '/ler-texto',

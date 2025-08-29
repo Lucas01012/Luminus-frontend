@@ -1,27 +1,6 @@
 import axios from "axios";
 import { API_CONFIG } from "@/constants/config";
-export interface VisionLabel {
-    objeto: string;
-    confianca: number;
-}
-
-export interface WebEntity {
-    descricao: string;
-    score: number;
-}
-
-export interface VisionResponse {
-    labels: VisionLabel[];
-    web_entities: WebEntity[];
-    processing_time?:number;
-}
-
-export interface GeminiResponse {
-    objeto: string;
-    confianca: null;
-    processing_time?: number;
-}
-
+import { VisionLabel, WebEntity, VisionResponse, GeminiResponse } from "@/models/image.model";
 export type AnalisarResponse = VisionResponse | GeminiResponse | { erro: string };
 
 export async function analisarImagem(imagemUri: string): Promise<AnalisarResponse> {
