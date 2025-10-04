@@ -1,24 +1,20 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { COLORS, getColors } from '@/constants/colors';
+import { COLORS, getColors } from '../constants/colors';
 
 interface AccessibilitySettings {
-  // Configurações de texto
   fontSize: 'small' | 'medium' | 'large' | 'extra-large';
   highContrast: boolean;
   boldText: boolean;
   
-  // Configurações de áudio
   soundEnabled: boolean;
-  speechRate: number; // 0.5 to 2.0
-  speechPitch: number; // 0.5 to 2.0
+  speechRate: number;
+  speechPitch: number;
   
-  // Configurações de interação
   hapticFeedback: boolean;
   reduceMotion: boolean;
   
-  // Configurações específicas para baixa visão
   largeButtons: boolean;
   increasedSpacing: boolean;
   screenReaderEnabled: boolean;
@@ -29,7 +25,6 @@ interface AccessibilityContextType {
   updateSettings: (newSettings: Partial<AccessibilitySettings>) => void;
   resetToDefaults: () => void;
   
-  // Helpers para componentes
   getTextSize: (baseSize: number) => number;
   getSpacing: (baseSpacing: number) => number;
   getButtonHeight: (baseHeight: number) => number;
@@ -62,11 +57,9 @@ export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({ ch
   const [settings, setSettings] = useState<AccessibilitySettings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Carrega configurações salvas e detecta configurações do sistema
   useEffect(() => {
     const initializeSettings = async () => {
       try {
-        // Carrega configurações salvas
         const savedSettings = await AsyncStorage.getItem(STORAGE_KEY);
         let loadedSettings = defaultSettings;
         
@@ -74,7 +67,6 @@ export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({ ch
           loadedSettings = { ...defaultSettings, ...JSON.parse(savedSettings) };
         }
 
-        // Detecta configurações do sistema
         const screenReaderEnabled = await AccessibilityInfo.isScreenReaderEnabled();
         const reduceMotionEnabled = await AccessibilityInfo.isReduceMotionEnabled();
         const boldTextEnabled = await AccessibilityInfo.isBoldTextEnabled();
@@ -84,7 +76,6 @@ export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({ ch
           screenReaderEnabled,
           reduceMotion: reduceMotionEnabled,
           boldText: boldTextEnabled,
-          // Se screen reader estiver ativo, ajusta outras configurações
           largeButtons: screenReaderEnabled ? true : loadedSettings.largeButtons,
           increasedSpacing: screenReaderEnabled ? true : loadedSettings.increasedSpacing,
           fontSize: screenReaderEnabled && loadedSettings.fontSize === 'medium' ? 'large' : loadedSettings.fontSize,
@@ -101,7 +92,6 @@ export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({ ch
 
     initializeSettings();
 
-    // Listeners para mudanças do sistema
     const screenReaderListener = AccessibilityInfo.addEventListener(
       'screenReaderChanged',
       (enabled) => {
@@ -139,11 +129,10 @@ export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({ ch
     const updatedSettings = { ...settings, ...newSettings };
     setSettings(updatedSettings);
     
-    // Salva as configurações (exceto as do sistema)
     try {
       const settingsToSave = {
         ...updatedSettings,
-        screenReaderEnabled: undefined, // Não salva configurações do sistema
+        screenReaderEnabled: undefined,
         reduceMotion: undefined,
         boldText: undefined,
       };
@@ -162,7 +151,6 @@ export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({ ch
     }
   };
 
-  // Helper functions
   const getTextSize = (baseSize: number): number => {
     const multipliers = {
       'small': 0.9,
@@ -195,9 +183,8 @@ export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({ ch
     shouldUseHighContrast,
   };
 
-  // Mostra loading enquanto carrega as configurações
   if (isLoading) {
-    return null; // ou um loading component
+    return null;
   }
 
   return (
@@ -215,13 +202,11 @@ export const useAccessibility = (): AccessibilityContextType => {
   return context;
 };
 
-// Hook para obter cores baseadas nas configurações de acessibilidade
 export const useAccessibleColors = () => {
   const { shouldUseHighContrast } = useAccessibility();
   return getColors(shouldUseHighContrast());
 };
 
-// Hook para obter estilos de texto baseados nas configurações
 export const useAccessibleTextStyles = () => {
   const { settings, getTextSize } = useAccessibility();
   

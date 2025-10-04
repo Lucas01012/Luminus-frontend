@@ -1,32 +1,26 @@
-// Sistema de cores otimizado para acessibilidade e baixa visão
 export const COLORS = {
-  // Cores primárias com alto contraste
   primary: {
-    // Amarelo mais vibrante para melhor visibilidade
-    main: '#FFB800', // Contraste 4.5:1 com fundo escuro
+    main: '#FFB800',
     light: '#FFCA28',
     dark: '#FF8F00',
-    contrast: '#000000', // Texto sobre fundo amarelo
+    contrast: '#000000',
   } as const,
   
-  // Cores de fundo otimizadas
   background: {
-    primary: '#1A1A1A', // Preto mais suave que reduz fadiga ocular
-    secondary: '#2D2D2D', // Cinza escuro com melhor contraste
-    tertiary: '#404040', // Cinza médio para cards
-    modal: 'rgba(0, 0, 0, 0.9)', // Modal com transparência
+    primary: '#1A1A1A',
+    secondary: '#2D2D2D',
+    tertiary: '#404040',
+    modal: 'rgba(0, 0, 0, 0.9)',
   } as const,
   
-  // Texto com contraste otimizado
   text: {
-    primary: '#FFFFFF', // Branco puro - contraste 21:1
-    secondary: '#E0E0E0', // Cinza claro - contraste 15:1
-    tertiary: '#B0B0B0', // Cinza médio - contraste 9:1
-    disabled: '#808080', // Texto desabilitado
-    high_contrast: '#FFFF00', // Amarelo para texto de destaque
+    primary: '#FFFFFF',
+    secondary: '#E0E0E0',
+    tertiary: '#B0B0B0',
+    disabled: '#808080',
+    high_contrast: '#FFFF00',
   } as const,
   
-  // Status e feedback
   status: {
     success: '#00E676', // Verde vibrante
     error: '#FF5252', // Vermelho vibrante
