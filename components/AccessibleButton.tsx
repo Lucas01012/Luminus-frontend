@@ -65,7 +65,6 @@ export const AccessibleButton: React.FC<AccessibleButtonProps> = ({
         disabled: disabled || loading,
         busy: loading,
       }}
-      // Força feedback háptico para melhor experiência
       activeOpacity={0.7}
     >
       {loading ? (
@@ -90,11 +89,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     gap: 8,
-    // Garante tamanho mínimo de toque
     minHeight: INTERACTIVE_SPACING.touchTarget,
     minWidth: INTERACTIVE_SPACING.touchTarget,
     
-    // Melhor feedback visual
     shadowColor: COLORS.background.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.8,
@@ -102,7 +99,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   
-  // Tamanhos
   small: {
     paddingHorizontal: INTERACTIVE_SPACING.buttonPaddingSmall,
     paddingVertical: INTERACTIVE_SPACING.buttonPaddingSmall,
@@ -121,7 +117,6 @@ const styles = StyleSheet.create({
     height: DIMENSIONS.buttonHeight.large,
   },
   
-  // Variantes de cor
   primary: {
     backgroundColor: COLORS.primary.main,
   },
@@ -144,7 +139,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.status.warning,
   },
   
-  // Estados
   disabled: {
     backgroundColor: COLORS.interactive.button_disabled,
     shadowOpacity: 0,
@@ -155,13 +149,11 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   
-  // Texto base
   baseText: {
     textAlign: 'center',
     fontWeight: TEXT_STYLES.button_medium.fontWeight,
   },
   
-  // Tamanhos de texto
   smallText: {
     fontSize: TEXT_STYLES.body_small.fontSize,
   },
@@ -175,7 +167,6 @@ const styles = StyleSheet.create({
     letterSpacing: TEXT_STYLES.button_large.letterSpacing,
   },
   
-  // Cores de texto por variante
   primaryText: {
     color: COLORS.primary.contrast,
   },

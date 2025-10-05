@@ -32,7 +32,9 @@ export async function analisarImagem(imagemUri: string): Promise<AnalisarRespons
             return { erro: "Imagem não selecionada" };
         }
 
-        console.log('📸 Analisando imagem...');
+        console.log('Analisando imagem...');
+        console.log('URL:', `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ANALISAR}?modo=gemini`);
+        console.log('Imagem URI:', imagemUri);
         
         const formData = new FormData();
         formData.append('imagem', {
@@ -40,6 +42,8 @@ export async function analisarImagem(imagemUri: string): Promise<AnalisarRespons
             type: 'image/jpeg',
             name: 'foto.jpg'
         } as any);
+
+        console.log('📤 Enviando FormData com campo "imagem"');
 
         const response = await axios.post(
             `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ANALISAR}?modo=gemini`,
@@ -50,14 +54,25 @@ export async function analisarImagem(imagemUri: string): Promise<AnalisarRespons
             }
         );
 
-        console.log('✅ Análise concluída');
+        console.log('Análise concluída');
         return response.data as AnalisarResponse;
 
     } catch (error: any) {
-        console.error('❌ Erro na análise:', error);
+        console.error('Erro na análise:', error);
+        console.error('Status:', error.response?.status);
+        console.error('Response data:', error.response?.data);
         
         if (error.code === 'ECONNABORTED') {
             return { erro: "Tempo limite excedido. Tente novamente." };
+        }
+        
+        if (error.message === 'Network Error' || error.code === 'ECONNREFUSED') {
+            return { erro: "Erro de conexão. Verifique se o servidor está rodando em 192.168.68.105:5000" };
+        }
+        
+        if (error.response?.status === 400) {
+            const serverError = error.response?.data?.erro;
+            return { erro: serverError || "Dados da requisição inválidos (400)" };
         }
         
         if (error.response?.status === 413) {
@@ -65,11 +80,11 @@ export async function analisarImagem(imagemUri: string): Promise<AnalisarRespons
         }
         
         if (!error.response) {
-            return { erro: "Erro de conexão. Verifique sua internet." };
+            return { erro: "Erro de conexão. Verifique se o servidor está rodando em 192.168.68.105:5000" };
         }
         
         const serverError = error.response?.data?.erro;
-        return { erro: serverError || "Erro ao processar imagem" };
+        return { erro: serverError || `Erro ${error.response?.status}: ${error.response?.statusText}` };
     }
 }
 
@@ -93,7 +108,6 @@ export function formatarParaTTS(resultado: AnalisarResponse): string {
     ).join(", ");
 }
 
-// Verificar se há erro
 export function temErro(resultado: AnalisarResponse): boolean {
     return 'erro' in resultado;
 }
