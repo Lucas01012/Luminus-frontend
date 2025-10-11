@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
   ScrollView,
-  Alert 
+  Alert,
+  AccessibilityInfo,
+  Platform
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { FolderOpen, FileText, Volume2, Download } from 'lucide-react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Speech from 'expo-speech';
@@ -41,6 +44,10 @@ export default function FileScreen() {
   };
 
   const selectDocument = async () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
@@ -49,23 +56,28 @@ export default function FileScreen() {
 
       if (!result.canceled) {
         setSelectedFile(result.assets[0]);
-        // Simulate text extraction
-        const mockText = `Este é um texto extraído do arquivo ${result.assets[0].name}. 
+        if (Platform.OS !== 'web') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+
+        const mockText = `Este é um texto extraído do arquivo ${result.assets[0].name}.
 
 Em uma implementação real, aqui seria exibido o conteúdo real do documento PDF, Word ou Excel selecionado.
 
 O texto seria processado usando bibliotecas específicas para cada tipo de arquivo:
 - Para PDF: react-native-pdf ou similar
-- Para Word: mammoth.js ou similar  
+- Para Word: mammoth.js ou similar
 - Para Excel: xlsx ou similar
 
 Este texto simulado demonstra como a funcionalidade funcionaria na prática, permitindo que o usuário visualize o conteúdo extraído e use a função de leitura em voz alta.`;
-        
+
         setExtractedText(mockText);
+        AccessibilityInfo.announceForAccessibility(`Arquivo ${result.assets[0].name} processado com sucesso`);
         Alert.alert('Arquivo Processado', `Texto extraído de ${result.assets[0].name} com sucesso!`);
       }
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível selecionar o arquivo')
+      AccessibilityInfo.announceForAccessibility('Erro ao selecionar arquivo');
+      Alert.alert('Erro', 'Não foi possível selecionar o arquivo');
     }
   };
 
@@ -80,17 +92,29 @@ Este texto simulado demonstra como a funcionalidade funcionaria na prática, per
       return;
     }
 
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+
     if (isSpeaking) {
       Speech.stop();
       setIsSpeaking(false);
+      AccessibilityInfo.announceForAccessibility('Leitura interrompida');
     } else {
       setIsSpeaking(true);
+      AccessibilityInfo.announceForAccessibility('Iniciando leitura do texto');
       Speech.speak(extractedText, {
         language: 'pt-BR',
         rate: settings.speechRate,
         pitch: settings.speechPitch,
-        onDone: () => setIsSpeaking(false),
-        onError: () => setIsSpeaking(false),
+        onDone: () => {
+          setIsSpeaking(false);
+          AccessibilityInfo.announceForAccessibility('Leitura concluída');
+        },
+        onError: () => {
+          setIsSpeaking(false);
+          AccessibilityInfo.announceForAccessibility('Erro ao ler texto');
+        },
       });
     }
   };

@@ -1,14 +1,16 @@
 import React from 'react';
-import { 
-  TouchableOpacity, 
-  Text, 
-  StyleSheet, 
+import {
+  TouchableOpacity,
+  Text,
+  StyleSheet,
   ActivityIndicator,
   TouchableOpacityProps,
   ViewStyle,
   TextStyle,
-  AccessibilityRole 
+  AccessibilityRole,
+  Platform
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { COLORS } from '@/constants/colors';
 import { TEXT_STYLES } from '@/constants/typography';
 import { INTERACTIVE_SPACING, DIMENSIONS } from '@/constants/spacing';
@@ -53,9 +55,17 @@ export const AccessibleButton: React.FC<AccessibleButtonProps> = ({
     disabled && styles.disabledText,
   ];
 
+  const handlePress = (event: any) => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    props.onPress?.(event);
+  };
+
   return (
     <TouchableOpacity
       {...props}
+      onPress={handlePress}
       style={buttonStyle}
       disabled={disabled || loading}
       accessibilityRole={accessibilityRole}
@@ -87,16 +97,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
-    gap: 8,
+    borderRadius: 12,
+    gap: 12,
     minHeight: INTERACTIVE_SPACING.touchTarget,
     minWidth: INTERACTIVE_SPACING.touchTarget,
-    
-    shadowColor: COLORS.background.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-    elevation: 4,
+
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
+    elevation: 6,
+
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
   
   small: {
@@ -119,6 +132,7 @@ const styles = StyleSheet.create({
   
   primary: {
     backgroundColor: COLORS.primary.main,
+    borderColor: COLORS.primary.light,
   },
   
   secondary: {
@@ -143,6 +157,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.interactive.button_disabled,
     shadowOpacity: 0,
     elevation: 0,
+    opacity: 0.5,
+    borderColor: 'transparent',
   },
   
   fullWidth: {

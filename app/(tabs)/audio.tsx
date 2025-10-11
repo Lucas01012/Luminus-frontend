@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
   ScrollView,
-  Alert 
+  Alert,
+  AccessibilityInfo,
+  Platform
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Mic, Play, Pause, Square, Upload, Volume2 } from 'lucide-react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Speech from 'expo-speech';
@@ -24,28 +27,47 @@ export default function AudioScreen() {
   const { getTextStyle, getTitleStyle } = useAccessibleTextStyles();
 
   const startRecording = () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    }
     setIsRecording(true);
-    // Simulate recording - in real app, use expo-av
+    AccessibilityInfo.announceForAccessibility('Gravação iniciada');
     setTimeout(() => {
       setIsRecording(false);
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      AccessibilityInfo.announceForAccessibility('Gravação concluída');
       Alert.alert('Gravação', 'Gravação de áudio concluída!');
     }, 3000);
   };
 
   const stopRecording = () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
     setIsRecording(false);
+    AccessibilityInfo.announceForAccessibility('Gravação interrompida');
   };
 
   const playAudio = () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     setIsPlaying(true);
-    // Simulate playback
+    AccessibilityInfo.announceForAccessibility('Reprodução iniciada');
     setTimeout(() => {
       setIsPlaying(false);
+      AccessibilityInfo.announceForAccessibility('Reprodução concluída');
     }, 2000);
   };
 
   const pauseAudio = () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     setIsPlaying(false);
+    AccessibilityInfo.announceForAccessibility('Reprodução pausada');
   };
 
   const selectAudioFile = async () => {
@@ -66,23 +88,35 @@ export default function AudioScreen() {
 
   const speakSampleText = () => {
     const sampleText = "Este é um exemplo de conversão de texto para fala usando a funcionalidade de áudio do aplicativo";
-    
+
     if (!settings.soundEnabled) {
       Alert.alert('Sons Desabilitados', 'Ative os sons nas configurações para usar esta funcionalidade.');
       return;
     }
-    
+
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+
     if (isSpeaking) {
       Speech.stop();
       setIsSpeaking(false);
+      AccessibilityInfo.announceForAccessibility('Fala interrompida');
     } else {
       setIsSpeaking(true);
+      AccessibilityInfo.announceForAccessibility('Iniciando texto para fala');
       Speech.speak(sampleText, {
         language: 'pt-BR',
         rate: settings.speechRate,
         pitch: settings.speechPitch,
-        onDone: () => setIsSpeaking(false),
-        onError: () => setIsSpeaking(false),
+        onDone: () => {
+          setIsSpeaking(false);
+          AccessibilityInfo.announceForAccessibility('Fala concluída');
+        },
+        onError: () => {
+          setIsSpeaking(false);
+          AccessibilityInfo.announceForAccessibility('Erro na fala');
+        },
       });
     }
   };

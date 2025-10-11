@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  ScrollView, 
-  Image, 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Image,
   Alert,
-  ActivityIndicator 
+  ActivityIndicator,
+  AccessibilityInfo,
+  Platform
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Camera, Upload, Volume2 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Speech from 'expo-speech';
@@ -29,6 +32,10 @@ export default function ImageUploadScreen() {
   const { getTextStyle, getTitleStyle } = useAccessibleTextStyles();
 
   const pickImage = async () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permissão necessária', 'Precisamos de permissão para acessar suas fotos');
@@ -44,11 +51,19 @@ export default function ImageUploadScreen() {
 
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      AccessibilityInfo.announceForAccessibility('Imagem selecionada com sucesso');
       processImage(result.assets[0].uri);
     }
   };
 
   const takePhoto = async () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permissão necessária', 'Precisamos de permissão para usar a câmera');
@@ -63,6 +78,10 @@ export default function ImageUploadScreen() {
 
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      AccessibilityInfo.announceForAccessibility('Foto capturada com sucesso');
       processImage(result.assets[0].uri);
     }
   };
@@ -98,20 +117,34 @@ const processImage = async (imageUri: string) => {
 
   const speakDescription = async () => {
     if (geminiResult && settings.soundEnabled) {
+      if (Platform.OS !== 'web') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
       setIsSpeaking(true);
+      AccessibilityInfo.announceForAccessibility('Iniciando leitura da descrição');
       Speech.speak(geminiResult, {
         language: 'pt-BR',
         rate: settings.speechRate,
         pitch: settings.speechPitch,
-        onDone: () => setIsSpeaking(false),
-        onError: () => setIsSpeaking(false),
+        onDone: () => {
+          setIsSpeaking(false);
+          AccessibilityInfo.announceForAccessibility('Leitura concluída');
+        },
+        onError: () => {
+          setIsSpeaking(false);
+          AccessibilityInfo.announceForAccessibility('Erro ao ler descrição');
+        },
       });
     }
   };
 
   const stopSpeaking = () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     Speech.stop();
     setIsSpeaking(false);
+    AccessibilityInfo.announceForAccessibility('Leitura interrompida');
   };
 
   // Estilos dinâmicos baseados nas configurações de acessibilidade
@@ -173,20 +206,20 @@ const processImage = async (imageUri: string) => {
     },
     placeholderImage: {
       width: '100%',
-      height: settings.largeButtons ? 260 : 240,
+      height: settings.largeButtons ? 280 : 260,
       backgroundColor: colors.background.tertiary,
-      borderRadius: 12,
+      borderRadius: 16,
       justifyContent: 'center',
       alignItems: 'center',
-      borderWidth: 2,
+      borderWidth: 3,
       borderColor: colors.interactive.border,
       borderStyle: 'dashed',
     },
     placeholderText: {
-      color: colors.text.tertiary,
-      marginTop: 12,
-      fontSize: getTextStyle(16).fontSize,
-      fontWeight: settings.boldText ? '600' : '400',
+      color: colors.text.secondary,
+      marginTop: 16,
+      fontSize: getTextStyle(18).fontSize,
+      fontWeight: '600',
     },
     buttonContainer: {
       flexDirection: settings.largeButtons ? 'column' : 'row',
@@ -199,31 +232,38 @@ const processImage = async (imageUri: string) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: settings.largeButtons ? 18 : 12,
-      paddingHorizontal: settings.largeButtons ? 24 : 16,
-      borderRadius: 8,
-      gap: settings.largeButtons ? 12 : 8,
-      minHeight: settings.largeButtons ? 64 : 48,
+      paddingVertical: settings.largeButtons ? 20 : 14,
+      paddingHorizontal: settings.largeButtons ? 28 : 20,
+      borderRadius: 12,
+      gap: settings.largeButtons ? 14 : 10,
+      minHeight: settings.largeButtons ? 68 : 52,
       maxWidth: settings.largeButtons ? '100%' : undefined,
       shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.6,
-      shadowRadius: 4,
-      elevation: 4,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.8,
+      shadowRadius: 6,
+      elevation: 6,
+      borderWidth: 2,
+      borderColor: colors.primary.light,
     },
     actionButtonText: {
       color: colors.primary.contrast,
-      fontWeight: '600',
-      fontSize: getTextStyle(16).fontSize,
+      fontWeight: '700',
+      fontSize: getTextStyle(17).fontSize,
+      letterSpacing: 0.5,
     },
     loadingContainer: {
       alignItems: 'center',
       paddingVertical: settings.increasedSpacing ? 60 : 40,
+      backgroundColor: colors.background.tertiary,
+      borderRadius: 16,
+      marginVertical: settings.increasedSpacing ? 24 : 16,
     },
     loadingText: {
-      color: colors.text.tertiary,
-      marginTop: 12,
-      fontSize: getTextStyle(16).fontSize,
+      color: colors.text.primary,
+      marginTop: 16,
+      fontSize: getTextStyle(18).fontSize,
+      fontWeight: '600',
     },
     resultsContainer: {
       backgroundColor: colors.background.tertiary,
@@ -317,20 +357,34 @@ const processImage = async (imageUri: string) => {
         </View>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.actionButton} onPress={takePhoto}>
-            <Camera size={20} color="#FFFFFF" />
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={takePhoto}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Tirar foto"
+            accessibilityHint="Abre a câmera para tirar uma nova foto"
+          >
+            <Camera size={settings.largeButtons ? 24 : 20} color="#000000" strokeWidth={2.5} />
             <Text style={styles.actionButtonText}>Tirar Foto</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={pickImage}>
-            <Upload size={20} color="#FFFFFF" />
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={pickImage}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Selecionar da galeria"
+            accessibilityHint="Abre a galeria para escolher uma imagem"
+          >
+            <Upload size={settings.largeButtons ? 24 : 20} color="#000000" strokeWidth={2.5} />
             <Text style={styles.actionButtonText}>Galeria</Text>
           </TouchableOpacity>
         </View>
 
         {loading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#F7931E" />
+          <View style={styles.loadingContainer} accessible={true} accessibilityLabel="Processando imagem" accessibilityRole="progressbar">
+            <ActivityIndicator size="large" color={colors.primary.main} />
             <Text style={styles.loadingText}>Processando imagem...</Text>
           </View>
         )}

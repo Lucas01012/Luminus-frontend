@@ -11,70 +11,70 @@ export const SPACING = {
 };
 
 export const INTERACTIVE_SPACING = {
-  touchTarget: 44,
-  
-  touchTargetExpanded: 56,
-  
-  betweenButtons: SPACING.lg, // 16px mínimo
-  betweenSections: SPACING.xxxl, // 32px
-  
-  buttonPaddingSmall: SPACING.md, // 12px
-  buttonPaddingMedium: SPACING.lg, // 16px
-  buttonPaddingLarge: SPACING.xl, // 20px
+  touchTarget: 48,
+
+  touchTargetExpanded: 64,
+
+  betweenButtons: SPACING.xl,
+  betweenSections: SPACING.huge,
+
+  buttonPaddingSmall: SPACING.lg,
+  buttonPaddingMedium: SPACING.xl,
+  buttonPaddingLarge: SPACING.xxl,
 };
 
 export const LAYOUT = {
-  screenPadding: SPACING.xl, // 20px nas laterais
-  screenPaddingLarge: SPACING.xxl, // 24px para telas maiores
-  
-  containerPadding: SPACING.lg, // 16px
-  cardPadding: SPACING.xl, // 20px
-  sectionPadding: SPACING.xxxl, // 32px
-  
-  headerHeight: 120, // Altura fixa do header
-  headerPadding: SPACING.xl,
-  
-  tabBarHeight: 80, // Altura da tab bar (maior para facilitar toque)
-  tabBarPadding: SPACING.md,
-  
-  cardBorderRadius: 12,
-  buttonBorderRadius: 8,
-  imageBorderRadius: 12,
-  
-  separatorHeight: 1,
-  separatorMargin: SPACING.lg,
+  screenPadding: SPACING.xxl,
+  screenPaddingLarge: SPACING.xxxl,
+
+  containerPadding: SPACING.xl,
+  cardPadding: SPACING.xxl,
+  sectionPadding: SPACING.huge,
+
+  headerHeight: 140,
+  headerPadding: SPACING.xxl,
+
+  tabBarHeight: 90,
+  tabBarPadding: SPACING.lg,
+
+  cardBorderRadius: 16,
+  buttonBorderRadius: 12,
+  imageBorderRadius: 16,
+
+  separatorHeight: 2,
+  separatorMargin: SPACING.xl,
 };
 
 export const DIMENSIONS = {
   imagePreview: {
     width: '100%',
-    height: 240,
+    height: 280,
   },
-  
+
   buttonHeight: {
-    small: 40,
-    medium: 48,
-    large: 56,
+    small: 48,
+    medium: 56,
+    large: 68,
   },
-  
+
   iconSize: {
-    small: 20,
-    medium: 24,
-    large: 32,
-    xlarge: 48,
+    small: 22,
+    medium: 26,
+    large: 36,
+    xlarge: 56,
   },
-  
+
   logo: {
-    width: 80,
-    height: 80,
+    width: 90,
+    height: 90,
   },
-  
-  inputHeight: 52,
-  
+
+  inputHeight: 60,
+
   loadingSize: {
-    small: 20,
-    medium: 32,
-    large: 48,
+    small: 24,
+    medium: 36,
+    large: 52,
   },
 };
 
