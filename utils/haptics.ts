@@ -2,8 +2,14 @@ import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { HapticPattern } from '@/constants/accessibilityDesign';
 
+let hapticsEnabled = true;
+
+export const setHapticsEnabled = (enabled: boolean) => {
+  hapticsEnabled = enabled;
+};
+
 export const triggerHaptic = async (pattern: HapticPattern) => {
-  if (Platform.OS === 'web') return;
+  if (Platform.OS === 'web' || !hapticsEnabled) return;
 
   try {
     switch (pattern) {
@@ -36,17 +42,35 @@ export const triggerHaptic = async (pattern: HapticPattern) => {
   }
 };
 
+export const triggerLight = () => triggerHaptic('light');
+export const triggerMedium = () => triggerHaptic('medium');
+export const triggerHeavy = () => triggerHaptic('heavy');
+export const triggerSuccess = () => triggerHaptic('success');
+export const triggerWarning = () => triggerHaptic('warning');
+export const triggerError = () => triggerHaptic('error');
+export const triggerSelection = () => triggerHaptic('selection');
+
+export const triggerTap = () => triggerLight();
+export const triggerPress = () => triggerMedium();
+export const triggerLongPress = () => triggerHeavy();
+export const triggerNotification = () => triggerMedium();
+export const triggerFocus = () => triggerSelection();
+
 export const triggerSuccessPattern = async () => {
-  if (Platform.OS === 'web') return;
-  await triggerHaptic('success');
+  if (Platform.OS === 'web' || !hapticsEnabled) return;
+  await triggerSuccess();
+  setTimeout(() => triggerLight(), 100);
 };
 
 export const triggerErrorPattern = async () => {
-  if (Platform.OS === 'web') return;
-  await triggerHaptic('error');
+  if (Platform.OS === 'web' || !hapticsEnabled) return;
+  await triggerError();
+  setTimeout(() => triggerMedium(), 80);
+  setTimeout(() => triggerMedium(), 160);
 };
 
 export const triggerWarningPattern = async () => {
-  if (Platform.OS === 'web') return;
-  await triggerHaptic('warning');
+  if (Platform.OS === 'web' || !hapticsEnabled) return;
+  await triggerWarning();
+  setTimeout(() => triggerLight(), 120);
 };
