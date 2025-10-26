@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#1a1a1a"
     },
     "ios": {
       "supportsTablet": true
@@ -22,7 +22,15 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "package": "com.lucasconectacargo.Luminusfrontend"
     },
     "web": {
       "bundler": "metro",
@@ -30,7 +38,21 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir ao Luminus acessar sua câmera para capturar imagens e análise visual.",
+          "microphonePermission": "Permitir ao Luminus acessar o microfone para recursos de áudio."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Permitir ao Luminus acessar suas fotos para análise de imagens.",
+          "savePhotosPermission": "Permitir ao Luminus salvar imagens processadas."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
