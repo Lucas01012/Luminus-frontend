@@ -19,6 +19,7 @@ import { useFeedback, FeedbackType } from '@/src/hooks/useFeedback';
 import { useLoading } from '@/src/hooks/useLoading';
 import apiService from '@/src/services/apiService';
 import documentService from '@/src/services/documentService';
+import historyService from '@/src/services/historyService';
 
 export default function ResultsScreen() {
   const { theme } = useTheme();
@@ -40,29 +41,143 @@ export default function ResultsScreen() {
     if (params.analysisResult) {
       try {
         const analysisData = JSON.parse(params.analysisResult as string);
-        setResult({
+        const resultData = {
           type: 'image',
           imageUri: params.imageUri,
           analysis: analysisData,
           text: null,
           source: params.type || 'unknown',
-        });
+        };
+        setResult(resultData);
+        saveToHistory(resultData);
       } catch (error) {
         console.error('Erro ao carregar análise:', error);
       }
     } else if (params.documentData) {
       try {
         const docData = JSON.parse(params.documentData as string);
-        setResult({
+        const resultData = {
           type: 'document',
           data: docData,
           title: params.title || 'Documento',
-        });
+        };
+        setResult(resultData);
+        saveToHistory(resultData);
       } catch (error) {
         console.error('Erro ao carregar documento:', error);
       }
     }
   }, []);
+
+  const generateTitle = (data: any): string => {
+    if (data.type === 'image') {
+      const description = data.analysis?.objeto || 
+                         data.analysis?.descricao || 
+                         data.analysis?.data?.objeto ||
+                         data.analysis?.data?.descricao || '';
+      
+      if (description) {
+        const firstSentence = description.split(/[.!?]/)[0].trim();
+        if (firstSentence.length > 60) {
+          return firstSentence.substring(0, 60) + '...';
+        }
+        return firstSentence || 'Análise de imagem';
+      }
+      
+      if (data.text) {
+        const textPreview = data.text.substring(0, 60).trim();
+        return textPreview + (data.text.length > 60 ? '...' : '');
+      }
+      
+      return 'Análise de imagem';
+    } else if (data.type === 'document') {
+      const docData = data.data;
+      
+      if (docData.metadata?.title) {
+        return docData.metadata.title;
+      }
+      
+      if (docData.resumo) {
+        const firstLine = docData.resumo.split(/[\n.!?]/)[0].trim();
+        if (firstLine.length > 60) {
+          return firstLine.substring(0, 60) + '...';
+        }
+        return firstLine || 'Documento processado';
+      }
+      
+      if (docData.text_content) {
+        const firstLine = docData.text_content.split(/[\n.!?]/)[0].trim();
+        if (firstLine.length > 60) {
+          return firstLine.substring(0, 60) + '...';
+        }
+        return firstLine || 'Documento processado';
+      }
+      
+      return data.title || 'Documento processado';
+    }
+    
+    return 'Item sem título';
+  };
+
+  const saveToHistory = async (data: any) => {
+    try {
+      if (data.type === 'image') {
+        const description = data.analysis?.objeto || 
+                           data.analysis?.descricao || 
+                           data.analysis?.data?.objeto ||
+                           data.analysis?.data?.descricao || '';
+        
+        let fullContent = '';
+        
+        if (description) {
+          fullContent = `ANÁLISE VISUAL:\n${description}\n\n`;
+        }
+        
+        if (data.text) {
+          fullContent += `TEXTO EXTRAÍDO:\n${data.text}`;
+        }
+        
+        if (!fullContent) {
+          fullContent = 'Sem conteúdo disponível';
+        }
+        
+        await historyService.addItem({
+          type: 'image',
+          title: generateTitle(data),
+          content: fullContent.trim(),
+          imageUri: data.imageUri as string,
+        });
+      } else if (data.type === 'document') {
+        const docData = data.data;
+        let fullContent = '';
+        
+        if (docData.resumo) {
+          fullContent = `RESUMO:\n${docData.resumo}\n\n`;
+        }
+        
+        if (docData.text_content) {
+          fullContent += `TEXTO COMPLETO:\n${docData.text_content}`;
+        }
+        
+        if (!fullContent) {
+          fullContent = 'Sem conteúdo disponível';
+        }
+        
+        await historyService.addItem({
+          type: 'document',
+          title: generateTitle(data),
+          content: fullContent.trim(),
+          metadata: {
+            pages: docData.metadata?.total_pages,
+            confidence: docData.confidence,
+            keywords: docData.palavras_chave,
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao salvar no histórico:', error);
+    }
+  };
 
   const analyzeContent = async () => {
     if (!params.imageUri) return;
@@ -78,14 +193,15 @@ export default function ResultsScreen() {
       const textResult = await textExtractor.execute(params.imageUri as string);
 
       if (analysisResult || textResult) {
-        setResult({
+        const resultData = {
           type: 'image',
           imageUri: params.imageUri,
           analysis: analysisResult,
           text: textResult?.texto || null,
           source: params.type || 'unknown',
-        });
-
+        };
+        setResult(resultData);
+        await saveToHistory(resultData);
         await triggerFeedback(FeedbackType.SUCCESS);
       }
     } catch (error) {

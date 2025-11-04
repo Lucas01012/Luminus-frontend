@@ -103,6 +103,20 @@ export default function TabLayout() {
       />
       
       <Tabs.Screen
+        name="two"
+        options={{
+          title: 'Histórico',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon 
+              name={focused ? "history" : "history"} 
+              color={color} 
+            />
+          ),
+          tabBarAccessibilityLabel: 'Histórico de análises e documentos',
+        }}
+      />
+      
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Configurações',
