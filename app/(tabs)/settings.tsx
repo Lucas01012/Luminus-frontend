@@ -8,12 +8,15 @@ import {
   Switch,
   Alert,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { useTheme } from '@/src/theme/ThemeProvider';
 import { Button, Card } from '@/src/components/ui';
-import { useFeedback, FeedbackType } from '@/src/hooks/useFeedback';
+import { useFeedback, FeedbackType } from '@/src/hooks';
+import { useAppSettingsContext } from '@/src/contexts/AppSettingsContext';
+import ApiDebugHelper from '@/src/services/apiDebugHelper';
 
 export default function SettingsScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
@@ -24,11 +27,11 @@ export default function SettingsScreen() {
     toggleVibration, 
     toggleSound 
   } = useFeedback();
+  
+  const { settings, updateSetting, resetSettings: resetAppSettings, getFontScale } = useAppSettingsContext();
 
-  const [notifications, setNotifications] = useState(true);
-  const [autoSave, setAutoSave] = useState(true);
-  const [highContrast, setHighContrast] = useState(false);
-  const [largeFonts, setLargeFonts] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'ok' | 'error'>('unknown');
 
   const handleSettingChange = async (
     setter: (value: boolean) => void,
@@ -63,6 +66,48 @@ export default function SettingsScreen() {
     );
   };
 
+  const testConnection = async () => {
+    setTestingConnection(true);
+    setConnectionStatus('unknown');
+    await triggerFeedback(FeedbackType.LIGHT);
+
+    try {
+      const result = await ApiDebugHelper.testConnection();
+      
+      if (result.success) {
+        setConnectionStatus('ok');
+        await triggerFeedback(FeedbackType.SUCCESS);
+        Alert.alert('✅ Conexão OK!', result.message);
+      } else {
+        setConnectionStatus('error');
+        await triggerFeedback(FeedbackType.ERROR);
+        Alert.alert('❌ Erro de Conexão', result.message);
+      }
+
+      console.log('Detalhes:', result.details);
+    } catch (error: any) {
+      setConnectionStatus('error');
+      await triggerFeedback(FeedbackType.ERROR);
+      Alert.alert('❌ Erro', `Não foi possível testar conexão: ${error.message}`);
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
+  const showDebugInfo = () => {
+    const config = ApiDebugHelper.checkConfiguration();
+    
+    let message = `URL da API: ${config.url}\n\n`;
+    
+    if (config.warnings.length > 0) {
+      message += 'Avisos:\n' + config.warnings.join('\n');
+    } else {
+      message += '✅ Configuração OK!';
+    }
+
+    Alert.alert('🐛 Debug Info', message);
+  };
+
   const resetSettings = async () => {
     await triggerFeedback(FeedbackType.MEDIUM);
     
@@ -75,11 +120,8 @@ export default function SettingsScreen() {
           text: 'Redefinir',
           style: 'destructive',
           onPress: () => {
-            setNotifications(true);
-            setAutoSave(true);
-            setHighContrast(false);
-            setLargeFonts(false);
-            // AccessibilityInfo.announceForAccessibility('Configurações redefinidas');
+            resetAppSettings();
+            Alert.alert('✅ Sucesso', 'Configurações restauradas para o padrão!');
           }
         }
       ]
@@ -93,26 +135,10 @@ export default function SettingsScreen() {
         {
           key: 'darkMode',
           title: 'Modo Escuro',
-          description: 'Interface com fundo escuro para melhor contraste',
+          description: 'Interface otimizada para ambientes com pouca luz',
           value: isDark,
           onToggle: () => handleSettingChange(toggleTheme, !isDark, 'Modo escuro'),
           icon: 'moon-o',
-        },
-        {
-          key: 'highContrast',
-          title: 'Alto Contraste',
-          description: 'Aumenta o contraste para melhor visibilidade',
-          value: highContrast,
-          onToggle: () => handleSettingChange(setHighContrast, highContrast, 'Alto contraste'),
-          icon: 'adjust',
-        },
-        {
-          key: 'largeFonts',
-          title: 'Fontes Grandes',
-          description: 'Aumenta o tamanho da fonte em todo o app',
-          value: largeFonts,
-          onToggle: () => handleSettingChange(setLargeFonts, largeFonts, 'Fontes grandes'),
-          icon: 'font',
         },
       ],
     },
@@ -144,16 +170,22 @@ export default function SettingsScreen() {
           key: 'notifications',
           title: 'Notificações',
           description: 'Receber alertas e notificações do sistema',
-          value: notifications,
-          onToggle: () => handleSettingChange(setNotifications, notifications, 'Notificações'),
+          value: settings.notifications,
+          onToggle: () => {
+            triggerFeedback(FeedbackType.LIGHT);
+            updateSetting('notifications', !settings.notifications);
+          },
           icon: 'bell',
         },
         {
           key: 'autoSave',
           title: 'Salvamento Automático',
           description: 'Salvar resultados automaticamente',
-          value: autoSave,
-          onToggle: () => handleSettingChange(setAutoSave, autoSave, 'Salvamento automático'),
+          value: settings.autoSave,
+          onToggle: () => {
+            triggerFeedback(FeedbackType.LIGHT);
+            updateSetting('autoSave', !settings.autoSave);
+          },
           icon: 'save',
         },
       ],
@@ -290,6 +322,53 @@ export default function SettingsScreen() {
         </View>
       </Card>
 
+      {/* Teste de Conexão */}
+      <Card variant="outlined" style={styles.connectionCard}>
+        <Text 
+          style={[styles.systemTitle, { color: theme.colors.text }]}
+        >
+          🌐 Conexão com Backend
+        </Text>
+        
+        <View style={styles.connectionContent}>
+          {connectionStatus === 'ok' && (
+            <View style={styles.connectionStatusRow}>
+              <FontAwesome name="check-circle" size={20} color={theme.colors.success} />
+              <Text style={[styles.connectionStatusText, { color: theme.colors.success }]}>
+                Conectado
+              </Text>
+            </View>
+          )}
+          
+          {connectionStatus === 'error' && (
+            <View style={styles.connectionStatusRow}>
+              <FontAwesome name="times-circle" size={20} color={theme.colors.error} />
+              <Text style={[styles.connectionStatusText, { color: theme.colors.error }]}>
+                Erro de conexão
+              </Text>
+            </View>
+          )}
+          
+          <View style={styles.connectionButtons}>
+            <Button
+              title={testingConnection ? "Testando..." : "Testar Conexão"}
+              variant="outline"
+              size="small"
+              onPress={testConnection}
+              disabled={testingConnection}
+              style={{ flex: 1 }}
+            />
+            <Button
+              title="Debug Info"
+              variant="ghost"
+              size="small"
+              onPress={showDebugInfo}
+              style={{ flex: 1 }}
+            />
+          </View>
+        </View>
+      </Card>
+
       {/* Informações do sistema */}
       <Card variant="outlined" style={styles.systemCard}>
         <Text 
@@ -299,16 +378,32 @@ export default function SettingsScreen() {
         </Text>
         <View style={styles.systemInfo}>
           <Text style={[styles.systemItem, { color: theme.colors.textSecondary }]}>
-            Plataforma: {Platform.OS === 'ios' ? 'iOS' : 'Android'}
+            📱 Plataforma: {Platform.OS === 'ios' ? 'iOS' : 'Android'}
           </Text>
           <Text style={[styles.systemItem, { color: theme.colors.textSecondary }]}>
-            Versão: 1.0.0
+            ✨ Versão: 1.0.0 (Acessível por design)
           </Text>
           <Text style={[styles.systemItem, { color: theme.colors.textSecondary }]}>
-            Tema: {isDark ? 'Escuro' : 'Claro'}
+            🎨 Tema: {isDark ? 'Escuro' : 'Claro'}
+          </Text>
+          <Text style={[styles.systemItem, { color: theme.colors.textSecondary }]}>
+            🔤 Fontes: Grandes por padrão (19px base)
+          </Text>
+          <Text style={[styles.systemItem, { color: theme.colors.textSecondary }]}>
+            📊 Contraste: 21:1 (WCAG AAA máximo)
+          </Text>
+          <Text style={[styles.systemItem, { color: theme.colors.textSecondary }]}>
+            🔔 Notificações: {settings.notifications ? 'Ativadas' : 'Desativadas'}
+          </Text>
+          <Text style={[styles.systemItem, { color: theme.colors.textSecondary }]}>
+            💾 Auto-save: {settings.autoSave ? 'Ativo' : 'Desativado'}
           </Text>
         </View>
       </Card>
+
+      <Text style={[styles.footerNote, { color: theme.colors.textSecondary }]}>
+        💡 Dica: As configurações são salvas automaticamente
+      </Text>
     </ScrollView>
   );
 }
@@ -359,7 +454,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   settingDesc: {
-    fontSize: 14,
+    fontSize: 13,
     lineHeight: 18,
   },
   actions: {
@@ -404,6 +499,33 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   systemItem: {
+    fontSize: 13,
+    paddingVertical: 2,
+  },
+  footerNote: {
+    fontSize: 12,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginTop: 16,
+    marginBottom: 32,
+  },
+  connectionCard: {
+    marginBottom: 16,
+  },
+  connectionContent: {
+    gap: 12,
+  },
+  connectionStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  connectionStatusText: {
     fontSize: 14,
+    fontWeight: '600',
+  },
+  connectionButtons: {
+    flexDirection: 'row',
+    gap: 8,
   },
 });

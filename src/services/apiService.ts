@@ -1,7 +1,24 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
-// Configuração base da API
-const BASE_URL = 'http://localhost:5000'; // Altere para o IP do backend se necessário
+function getBaseURL(): string {
+  const configURL = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL;
+  
+  if (configURL && configURL !== 'http://192.168.0.100:5000') {
+    return configURL;
+  }
+  
+  if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:5000';
+  } else if (Platform.OS === 'ios') {
+    return 'http://localhost:5000';
+  } else {
+    return 'http://localhost:5000';
+  }
+}
+
+const BASE_URL = getBaseURL();
 
 class ApiService {
   private api: AxiosInstance;
@@ -9,77 +26,77 @@ class ApiService {
   constructor() {
     this.api = axios.create({
       baseURL: BASE_URL,
-      timeout: 30000, // 30 segundos para uploads grandes
+      timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
-    // Interceptor para requests
-    this.api.interceptors.request.use(
-      (config) => {
-        console.log(`📤 API Request: ${config.method?.toUpperCase()} ${config.url}`);
-        return config;
-      },
-      (error) => {
-        console.error('❌ Request Error:', error);
-        return Promise.reject(error);
-      }
-    );
-
-    // Interceptor para responses
     this.api.interceptors.response.use(
-      (response) => {
-        console.log(`📥 API Response: ${response.status} ${response.config.url}`);
-        return response;
-      },
+      (response) => response,
       (error) => {
-        console.error('❌ Response Error:', error.response?.data || error.message);
+        console.error('API Error:', error.response?.data || error.message);
         return Promise.reject(error);
       }
     );
   }
 
-  // Método genérico para upload de arquivos
-  private async uploadFile(
+  // Testa conectividade básica com o backend
+  async testConnection(): Promise<boolean> {
+    try {
+      await this.api.get('/', { timeout: 5000 });
+      return true;
+    } catch (error: any) {
+      console.error('Erro ao conectar com backend:', error.message);
+      return false;
+    }
+  }
+
+  async uploadFile(
     endpoint: string, 
     file: { uri: string; name?: string; type?: string },
     additionalData?: Record<string, any>
   ): Promise<any> {
-    const formData = new FormData();
-    
-    // Adiciona o arquivo ao FormData
-    const fileData: any = {
-      uri: file.uri,
-      type: file.type || 'image/jpeg',
-      name: file.name || 'upload.jpg',
-    };
-    
-    if (endpoint.includes('imagem')) {
-      formData.append('imagem', fileData);
-    } else if (endpoint.includes('arquivo')) {
-      formData.append('arquivo', fileData);
-    }
+    try {
+      const formData = new FormData();
+      
+      const fileData: any = {
+        uri: file.uri,
+        type: file.type || 'image/jpeg',
+        name: file.name || 'image.jpg',
+      };
+      
+      // v2.0: Documentos usam campo 'arquivo', imagens usam 'imagem'
+      const fieldName = endpoint.includes('documento') ? 'arquivo' : 'imagem';
+      formData.append(fieldName, fileData as any);
 
-    // Adiciona dados adicionais se existirem
-    if (additionalData) {
-      Object.keys(additionalData).forEach(key => {
-        formData.append(key, additionalData[key]);
+      if (additionalData) {
+        Object.keys(additionalData).forEach(key => {
+          formData.append(key, additionalData[key]);
+        });
+      }
+
+      const response = await this.api.post(endpoint, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Accept': 'application/json',
+        },
+        timeout: 60000,
+        transformRequest: [(data) => data],
       });
-    }
 
-    return this.api.post(endpoint, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+      return response;
+      
+    } catch (error: any) {
+      console.error('Erro no upload:', error.message);
+      throw error;
+    }
   }
 
-  // Análise de imagens
   async analyzeImage(
     imageUri: string, 
     mode: 'gemini' | 'vision' = 'gemini'
-  ) {
+  ): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
       const file = {
         uri: imageUri,
@@ -92,14 +109,53 @@ class ApiService {
         file
       );
 
+      let resultData = response.data;
+      
+      if (Array.isArray(resultData)) {
+        if (resultData.length > 0) {
+          resultData = resultData[0];
+        } else {
+          return {
+            success: false,
+            error: 'Resposta vazia do backend',
+          };
+        }
+      }
+      
+      if (resultData.labels && Array.isArray(resultData.labels)) {
+        if (resultData.labels.length > 0) {
+          resultData = resultData.labels[0];
+        } else {
+          return {
+            success: false,
+            error: 'Nenhum objeto identificado na imagem',
+          };
+        }
+      }
+
       return {
         success: true,
-        data: response.data,
+        data: resultData,
       };
     } catch (error: any) {
+      if (
+        mode === 'gemini' && 
+        error.response?.data?.erro && 
+        error.response.data.erro.includes('429')
+      ) {
+        try {
+          return await this.analyzeImage(imageUri, 'vision');
+        } catch (visionError: any) {
+          return {
+            success: false,
+            error: 'Quota do Gemini excedida. Aguarde 1 minuto e tente novamente.',
+          };
+        }
+      }
+      
       return {
         success: false,
-        error: error.response?.data?.erro || 'Erro ao analisar imagem',
+        error: error.response?.data?.erro || error.message || 'Erro ao analisar imagem',
       };
     }
   }

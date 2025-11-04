@@ -58,6 +58,9 @@ export default function HomeScreen() {
       icon: 'camera',
       route: '/(tabs)/camera',
       color: theme.colors.primary,
+      // Ícone branco em fundo colorido escuro para máximo contraste
+      iconColor: theme.isDark ? '#FFFFFF' : theme.colors.primary,
+      bgColor: theme.isDark ? theme.colors.primary : `${theme.colors.primary}20`,
     },
     {
       id: 'gallery',
@@ -66,6 +69,8 @@ export default function HomeScreen() {
       icon: 'photo',
       route: '/(tabs)/gallery',
       color: theme.colors.secondary,
+      iconColor: theme.isDark ? '#FFFFFF' : theme.colors.secondary,
+      bgColor: theme.isDark ? theme.colors.secondary : `${theme.colors.secondary}20`,
     },
     {
       id: 'document',
@@ -74,6 +79,8 @@ export default function HomeScreen() {
       icon: 'file-text',
       route: '/(tabs)/documents',
       color: theme.colors.success,
+      iconColor: theme.isDark ? '#FFFFFF' : theme.colors.success,
+      bgColor: theme.isDark ? theme.colors.success : `${theme.colors.success}20`,
     },
   ];
 
@@ -132,13 +139,13 @@ export default function HomeScreen() {
                 <View 
                   style={[
                     styles.actionIcon, 
-                    { backgroundColor: `${action.color}20` }
+                    { backgroundColor: action.bgColor }
                   ]}
                 >
                   <FontAwesome 
                     name={action.icon as any} 
-                    size={24} 
-                    color={action.color}
+                    size={28} 
+                    color={action.iconColor}
                   />
                 </View>
                 
@@ -208,21 +215,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   appName: {
-    fontSize: 32,
+    fontSize: 36, // Aumentado para mais destaque
     fontWeight: 'bold',
     marginTop: 8,
     textAlign: 'center',
   },
   welcome: {
-    fontSize: 16,
+    fontSize: 18, // Aumentado de 16 para 18
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 26,
   },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 24, // Aumentado de 20 para 24
     fontWeight: 'bold',
     marginBottom: 16,
   },
@@ -247,21 +254,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   actionTitle: {
-    fontSize: 16,
+    fontSize: 18, // Aumentado de 16 para 18
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 4,
   },
   actionDesc: {
-    fontSize: 12,
+    fontSize: 15, // Aumentado de 12 para 15 (mais legível!)
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 20,
   },
   tipCard: {
     marginTop: 8,
   },
   tipText: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 16, // Aumentado de 14 para 16
+    lineHeight: 23,
   },
 });

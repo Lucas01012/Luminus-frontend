@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   TouchableOpacity, 
   TouchableOpacityProps, 
@@ -7,6 +7,7 @@ import {
   ViewStyle, 
   TextStyle,
   AccessibilityRole,
+  Animated,
 } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 
@@ -35,6 +36,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const { theme } = useTheme();
+  const [isPressed, setIsPressed] = useState(false);
 
   const getButtonStyle = (): ViewStyle => {
     const baseStyle: ViewStyle = {
@@ -71,17 +73,37 @@ export const Button: React.FC<ButtonProps> = ({
     switch (variant) {
       case 'primary':
         baseStyle.backgroundColor = disabled ? theme.colors.outline : theme.colors.primary;
+        // Borda de foco visível ao pressionar
+        if (isPressed && !disabled) {
+          baseStyle.borderWidth = 3;
+          baseStyle.borderColor = theme.colors.primaryLight;
+        }
         break;
       case 'secondary':
         baseStyle.backgroundColor = disabled ? theme.colors.outline : theme.colors.secondary;
+        if (isPressed && !disabled) {
+          baseStyle.borderWidth = 3;
+          baseStyle.borderColor = theme.colors.secondaryLight;
+        }
         break;
       case 'outline':
         baseStyle.borderWidth = 2;
         baseStyle.borderColor = disabled ? theme.colors.outline : theme.colors.primary;
         baseStyle.backgroundColor = 'transparent';
+        // Feedback: preencher com cor ao pressionar
+        if (isPressed && !disabled) {
+          baseStyle.backgroundColor = `${theme.colors.primary}20`;
+          baseStyle.borderWidth = 3;
+        }
         break;
       case 'ghost':
         baseStyle.backgroundColor = 'transparent';
+        // Feedback: fundo sutil ao pressionar
+        if (isPressed && !disabled) {
+          baseStyle.backgroundColor = `${theme.colors.primary}15`;
+          baseStyle.borderWidth = 2;
+          baseStyle.borderColor = theme.colors.primary;
+        }
         break;
     }
 
@@ -129,6 +151,9 @@ export const Button: React.FC<ButtonProps> = ({
     <TouchableOpacity
       style={buttonStyle}
       disabled={disabled || loading}
+      activeOpacity={0.7}
+      onPressIn={() => setIsPressed(true)}
+      onPressOut={() => setIsPressed(false)}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || title}
       accessibilityHint={accessibilityHint}

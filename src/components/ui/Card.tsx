@@ -34,6 +34,9 @@ export const Card: React.FC<CardProps> = ({
     const baseStyle: ViewStyle = {
       borderRadius: theme.borderRadius.lg,
       backgroundColor: theme.colors.backgroundCard,
+      // Borda sutil em todos os cards para melhor definição
+      borderWidth: 1,
+      borderColor: theme.colors.outline,
     };
 
     // Variantes
@@ -42,11 +45,14 @@ export const Card: React.FC<CardProps> = ({
         return {
           ...baseStyle,
           ...theme.shadows.md,
+          // Sombra mais visível no modo escuro
+          elevation: 8,
         };
       case 'outlined':
         return {
           ...baseStyle,
-          borderWidth: 1,
+          // Borda mais forte no modo outlined
+          borderWidth: 2,
           borderColor: theme.colors.outline,
         };
       default:

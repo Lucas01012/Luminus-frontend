@@ -26,7 +26,6 @@
       "permissions": [
         "CAMERA",
         "READ_MEDIA_IMAGES",
-        "READ_MEDIA_VIDEO",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
       ],
@@ -47,15 +46,17 @@
         }
       ],
       [
-        "expo-media-library",
+        "expo-image-picker",
         {
-          "photosPermission": "Permitir ao Luminus acessar suas fotos para análise de imagens.",
-          "savePhotosPermission": "Permitir ao Luminus salvar imagens processadas."
+          "photosPermission": "Permitir ao Luminus acessar suas fotos para análise de imagens."
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "EXPO_PUBLIC_API_URL": "http://192.168.1.127:5000"
     }
   }
 }

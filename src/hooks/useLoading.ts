@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 
 interface UseLoadingReturn<T> {
   data: T | null;
@@ -15,12 +15,20 @@ export function useLoading<T = any>(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Usar useRef para manter referência estável da função
+  const asyncFunctionRef = useRef(asyncFunction);
+  
+  // Atualizar ref sempre que a função mudar
+  useEffect(() => {
+    asyncFunctionRef.current = asyncFunction;
+  }, [asyncFunction]);
+
   const execute = useCallback(async (...args: any[]): Promise<T | null> => {
     try {
       setLoading(true);
       setError(null);
       
-      const result = await asyncFunction(...args);
+      const result = await asyncFunctionRef.current(...args);
       
       if (result.success && result.data) {
         setData(result.data);
@@ -35,7 +43,7 @@ export function useLoading<T = any>(
     } finally {
       setLoading(false);
     }
-  }, [asyncFunction]);
+  }, []); // Sem dependência da função
 
   const reset = useCallback(() => {
     setData(null);

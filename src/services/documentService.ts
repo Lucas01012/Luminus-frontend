@@ -21,13 +21,67 @@ export interface TTSOptions {
   velocidadeVariavel?: boolean;
 }
 
+// Tipos para a resposta do backend
+export interface DocumentStructure {
+  headings?: Array<{
+    text: string;
+    level: number;
+    page?: number;
+  }>;
+  paragraphs?: Array<{
+    text: string;
+    page?: number;
+    confidence?: number;
+  }>;
+  blocks?: Array<{
+    text: string;
+    confidence?: number;
+  }>;
+  words?: Array<{
+    text: string;
+    confidence: number;
+    bbox: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+  }>;
+  tables?: Array<{
+    data: string[][];
+    rows: number;
+    columns: number;
+  }>;
+  pages?: Array<{
+    page_number: number;
+    headings: any[];
+    paragraphs: any[];
+    images: any[];
+  }>;
+}
+
+export interface DocumentMetadata {
+  total_pages?: number;
+  title?: string;
+  author?: string;
+}
+
+export interface DocumentResponse {
+  text_content: string;
+  structure?: DocumentStructure;
+  metadata?: DocumentMetadata;
+  confidence?: number;
+  resumo?: string;
+  palavras_chave?: string[];
+}
+
 class DocumentService {
-  // Processar documentos (PDF, DOCX, imagens)
+  // Processar documentos (PDF, DOCX, imagens) - 1 página com resumo automático
   async processDocument(
     documentUri: string,
     documentType: string,
     options?: DocumentProcessingOptions
-  ) {
+  ): Promise<{ success: boolean; data?: DocumentResponse; error?: string }> {
     try {
       const file = {
         uri: documentUri,
@@ -35,30 +89,59 @@ class DocumentService {
         name: `document.${documentType.split('/').pop()}`,
       };
 
+      // Backend agora usa funções especializadas:
+      // - extract_text_from_pdf() para PDFs (primeira página)
+      // - extract_text_from_docx() para Word
+      // - extract_text_from_image() para imagens/documentos escaneados
+      // - generate_document_summary() para resumo com Gemini
+      
       const additionalData: Record<string, string> = {};
       
       if (options?.incluirResumo !== undefined) {
-        additionalData.incluir_resumo = options.incluirResumo.toString();
-      }
-      
-      if (options?.extrairEstrutura !== undefined) {
-        additionalData.extrair_estrutura = options.extrairEstrutura.toString();
+        additionalData.gerar_resumo = options.incluirResumo ? 'true' : 'false';
+      } else {
+        additionalData.gerar_resumo = 'true'; // Sempre gera resumo por padrão
       }
 
+      // v2.0: Endpoint correto é /documento/processar com campo 'arquivo'
       const response = await apiService['uploadFile'](
-        '/documento/processar-documento',
+        '/documento/processar',
         file,
         additionalData
       );
 
+      // Valida e estrutura a resposta
+      const documentData: DocumentResponse = response.data;
+
+      // Verifica se tem erro
+      if ('erro' in documentData) {
+        return {
+          success: false,
+          error: (documentData as any).erro,
+        };
+      }
+
       return {
         success: true,
-        data: response.data,
+        data: documentData,
       };
     } catch (error: any) {
+      // Tratamento de erro melhorado
+      let errorMessage = 'Erro ao processar documento';
+      
+      if (error.response?.status === 404) {
+        errorMessage = '❌ Rota /ler-texto não encontrada no backend. Verifique se o servidor Flask está rodando e se a rota foi criada.';
+      } else if (error.response?.data?.erro) {
+        errorMessage = error.response.data.erro;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      console.error('📄 Erro ao processar documento:', errorMessage);
+
       return {
         success: false,
-        error: error.response?.data?.erro || 'Erro ao processar documento',
+        error: errorMessage,
       };
     }
   }

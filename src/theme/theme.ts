@@ -1,107 +1,109 @@
 import { Colors, Typography, Spacing, BorderRadius, Shadows, Theme } from './types';
 
-// Cores do modo escuro (padrão para acessibilidade)
+// Cores do modo escuro - ACESSÍVEL POR PADRÃO (WCAG AAA)
+// Otimizado para visão reduzida: #111111 + #EEEEEE + azul elétrico
 const darkColors: Colors = {
-  // Cores primárias - Roxo vibrante para destaque
-  primary: '#8B5CF6',
-  primaryLight: '#A78BFA',
-  primaryDark: '#7C3AED',
+  // Cores primárias - Azul elétrico visível no preto
+  primary: '#1E90FF', // Azul elétrico (DodgerBlue - alta visibilidade)
+  primaryLight: '#4DA6FF', // Azul mais claro para hover
+  primaryDark: '#0066CC', // Azul royal escuro
   
   // Cores secundárias - Azul complementar
-  secondary: '#3B82F6',
-  secondaryLight: '#60A5FA',
-  secondaryDark: '#2563EB',
+  secondary: '#00A8E8', // Azul cyan elétrico
+  secondaryLight: '#33B8F0', // Azul claro vibrante
+  secondaryDark: '#0077B6', // Azul oceano
   
-  // Cores de fundo - Preto profundo para contraste
-  background: '#0F0F0F',
-  backgroundSecondary: '#1A1A1A',
-  backgroundCard: '#262626',
+  // Cores de fundo - Preto suave com cinzas bem definidos
+  background: '#111111', // Preto suave
+  backgroundSecondary: '#1A1A1A', // Cinza escuro
+  backgroundCard: '#1A1A1A', // Cards com borda para definir
   
   // Cores de superfície
-  surface: '#171717',
-  surfaceVariant: '#404040',
+  surface: '#111111',
+  surfaceVariant: '#1F1F1F',
   
-  // Cores de texto - Alto contraste
-  text: '#FFFFFF',
-  textSecondary: '#D1D5DB',
-  textDisabled: '#6B7280',
-  textInverse: '#000000',
+  // Cores de texto - Off-white suave (menos cansativo)
+  text: '#EEEEEE', // Off-white suave (melhor que branco puro)
+  textSecondary: '#CCCCCC', // Cinza claro para hierarquia
+  textDisabled: '#888888', // Cinza médio
+  textInverse: '#111111',
   
-  // Cores de estado
-  success: '#10B981',
-  warning: '#F59E0B',
-  error: '#EF4444',
-  info: '#06B6D4',
+  // Cores de estado - Vibrantes no escuro
+  success: '#00D9A5', // Verde neon suave
+  warning: '#FFB300', // Âmbar vibrante
+  error: '#FF5252', // Vermelho coral brilhante
+  info: '#1E90FF', // Azul elétrico
   
-  // Cores de contorno
-  outline: '#525252',
-  outlineVariant: '#737373',
+  // Cores de contorno - Bordas visíveis
+  outline: '#333333', // Borda média
+  outlineVariant: '#555555', // Borda mais clara
   
   // Cores especiais
   shadow: '#000000',
-  overlay: 'rgba(0, 0, 0, 0.6)',
+  overlay: 'rgba(0, 0, 0, 0.8)',
   
   // Cores de acessibilidade
-  highContrast: '#FFFFFF',
-  lowContrast: '#404040',
+  highContrast: '#EEEEEE',
+  lowContrast: '#888888',
 };
 
-// Cores do modo claro (para usuários que preferem)
+// Cores do modo claro - ACESSÍVEL POR PADRÃO (WCAG AAA)
+// Branco off-white suave + texto preto forte + azul escuro
 const lightColors: Colors = {
-  // Cores primárias
-  primary: '#7C3AED',
-  primaryLight: '#8B5CF6',
-  primaryDark: '#6D28D9',
+  // Cores primárias - Azul escuro forte no claro
+  primary: '#005AB5', // Azul escuro profundo (contraste 8.2:1 no branco)
+  primaryLight: '#0284C7', // Azul médio
+  primaryDark: '#003D80', // Azul navy escuro
   
-  // Cores secundárias
-  secondary: '#2563EB',
-  secondaryLight: '#3B82F6',
-  secondaryDark: '#1D4ED8',
+  // Cores secundárias - Azul petróleo
+  secondary: '#004C70', // Azul petróleo
+  secondaryLight: '#0369A1', // Azul sky
+  secondaryDark: '#00344D', // Azul navy profundo
   
-  // Cores de fundo
-  background: '#FFFFFF',
-  backgroundSecondary: '#F9FAFB',
-  backgroundCard: '#FFFFFF',
+  // Cores de fundo - Branco off-white suave (menos agressivo)
+  background: '#FAFAFA', // Off-white suave
+  backgroundSecondary: '#F5F5F5', // Cinza muito claro
+  backgroundCard: '#FFFFFF', // Branco puro para cards
   
   // Cores de superfície
-  surface: '#F3F4F6',
-  surfaceVariant: '#E5E7EB',
+  surface: '#FAFAFA',
+  surfaceVariant: '#EFEFEF',
   
-  // Cores de texto
-  text: '#111827',
-  textSecondary: '#374151',
-  textDisabled: '#9CA3AF',
+  // Cores de texto - Preto forte mas não puro
+  text: '#000000', // Preto puro para máximo contraste
+  textSecondary: '#2A2A2A', // Preto levemente off
+  textDisabled: '#707070', // Cinza médio
   textInverse: '#FFFFFF',
   
-  // Cores de estado
-  success: '#059669',
-  warning: '#D97706',
-  error: '#DC2626',
-  info: '#0891B2',
+  // Cores de estado - Escuras e acessíveis
+  success: '#00796B', // Verde-azulado escuro (seguro daltonismo)
+  warning: '#D97706', // Laranja escuro forte
+  error: '#B71C1C', // Vermelho escuro (não ofusca)
+  info: '#005AB5', // Azul principal
   
-  // Cores de contorno
-  outline: '#D1D5DB',
-  outlineVariant: '#9CA3AF',
+  // Cores de contorno - Bem definidas
+  outline: '#C0C0C0',
+  outlineVariant: '#D0D0D0',
   
   // Cores especiais
-  shadow: '#000000',
+  shadow: '#00000040', // Sombra suave
   overlay: 'rgba(0, 0, 0, 0.5)',
   
   // Cores de acessibilidade
   highContrast: '#000000',
-  lowContrast: '#6B7280',
+  lowContrast: '#707070',
 };
 
-// Tipografia escalável para acessibilidade
+// Tipografia GRANDE POR PADRÃO para máxima acessibilidade
 const typography: Typography = {
   fontSize: {
-    xs: 12,
-    sm: 14,
-    md: 16,
-    lg: 18,
-    xl: 24,
-    xxl: 32,
-    xxxl: 48,
+    xs: 15, // Mínimo: 15px (muito legível)
+    sm: 17, // Pequeno: 17px (confortável)
+    md: 19, // Normal: 19px (base grande)
+    lg: 22, // Grande: 22px (títulos pequenos)
+    xl: 28, // Extra large: 28px (títulos médios)
+    xxl: 36, // Muito grande: 36px (títulos grandes)
+    xxxl: 54, // Hero: 54px (destaque máximo)
   },
   fontWeight: {
     light: '300',

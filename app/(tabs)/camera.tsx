@@ -8,6 +8,7 @@ import {
   Dimensions,
   TouchableOpacity,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -16,6 +17,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useTheme } from '@/src/theme/ThemeProvider';
 import { Button } from '@/src/components/ui';
 import { useFeedback, FeedbackType } from '@/src/hooks/useFeedback';
+import { apiService } from '@/src/services/apiService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -28,6 +30,7 @@ export default function CameraScreen() {
   const [type, setType] = useState<'back' | 'front'>('back');
   const [flashMode, setFlashMode] = useState<'off' | 'on' | 'auto'>('off');
   const [isReady, setIsReady] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const cameraRef = useRef<any>(null);
 
 
@@ -39,21 +42,52 @@ export default function CameraScreen() {
 
 
   const takePicture = async () => {
+    if (isAnalyzing) return;
+    
     try {
       await triggerFeedback(FeedbackType.MEDIUM);
+      
       if (cameraRef.current && isReady && cameraRef.current.takePictureAsync) {
+        setIsAnalyzing(true);
+        
         const photo = await cameraRef.current.takePictureAsync({
           quality: 0.8,
           base64: false,
         });
-        router.push({
-          pathname: '/results',
-          params: { imageUri: photo.uri, type: 'camera' }
-        });
+
+        const result = await apiService.analyzeImage(photo.uri, 'gemini');
+
+        setIsAnalyzing(false);
+
+        if (result.success) {
+          await triggerFeedback(FeedbackType.SUCCESS);
+          
+          router.push({
+            pathname: '/results',
+            params: { 
+              imageUri: photo.uri, 
+              type: 'camera',
+              analysisResult: JSON.stringify(result.data)
+            }
+          });
+        } else {
+          await triggerFeedback(FeedbackType.ERROR);
+          
+          const errorMsg = result.error || 'Não foi possível analisar a imagem.';
+          const title = errorMsg.includes('429') || errorMsg.includes('quota') || errorMsg.includes('exhausted')
+            ? '⏳ API Sobrecarregada'
+            : 'Erro na Análise';
+          
+          Alert.alert(title, errorMsg);
+        }
+      } else {
+        Alert.alert('Erro', 'Câmera não está pronta. Aguarde um momento.');
       }
-    } catch (error) {
-      console.error('Erro ao capturar foto:', error);
-      Alert.alert('Erro', 'Não foi possível capturar a foto.');
+    } catch (error: any) {
+      console.error('Erro ao capturar foto:', error.message);
+      setIsAnalyzing(false);
+      await triggerFeedback(FeedbackType.ERROR);
+      Alert.alert('Erro', `Não foi possível capturar e analisar a foto: ${error.message || 'Erro desconhecido'}`);
     }
   };
 
@@ -151,6 +185,7 @@ export default function CameraScreen() {
           <TouchableOpacity
             style={[styles.secondaryButton, { backgroundColor: theme.colors.surface }]}
             onPress={toggleCameraType}
+            disabled={isAnalyzing}
             accessibilityLabel="Alternar câmera"
             accessibilityRole="button"
           >
@@ -159,24 +194,42 @@ export default function CameraScreen() {
 
           {/* Botão de captura */}
           <TouchableOpacity
-            style={[styles.captureButton, { borderColor: theme.colors.primary }]}
+            style={[styles.captureButton, { borderColor: theme.colors.primary, opacity: isAnalyzing ? 0.6 : 1 }]}
             onPress={takePicture}
-            accessibilityLabel="Capturar foto"
+            disabled={isAnalyzing}
+            accessibilityLabel={isAnalyzing ? "Analisando..." : "Capturar foto"}
             accessibilityRole="button"
             accessibilityHint="Toque para tirar uma foto e analisá-la"
           >
-            <View style={[styles.captureButtonInner, { backgroundColor: theme.colors.primary }]} />
+            {isAnalyzing ? (
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+            ) : (
+              <View style={[styles.captureButtonInner, { backgroundColor: theme.colors.primary }]} />
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.secondaryButton, { backgroundColor: theme.colors.surface }]}
             onPress={() => router.push('/(tabs)/gallery')}
+            disabled={isAnalyzing}
             accessibilityLabel="Abrir galeria"
             accessibilityRole="button"
           >
             <FontAwesome name="photo" size={24} color={theme.colors.text} />
           </TouchableOpacity>
         </View>
+        
+        {/* Indicador de análise */}
+        {isAnalyzing && (
+          <View style={styles.analyzingOverlay}>
+            <View style={[styles.analyzingBox, { backgroundColor: theme.colors.overlay }]}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <Text style={[styles.analyzingText, { color: theme.colors.textInverse }]}>
+                Analisando imagem...
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -256,5 +309,25 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
+  },
+  analyzingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  analyzingBox: {
+    padding: 24,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  analyzingText: {
+    marginTop: 12,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { Appearance, ColorSchemeName } from 'react-native';
 import { Theme } from './types';
 import { darkTheme, lightTheme } from './theme';
+import { useAppSettingsContext } from '../contexts/AppSettingsContext';
 
 interface ThemeContextType {
   theme: Theme;
@@ -17,8 +18,15 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  // Começa com modo escuro por padrão (melhor para acessibilidade)
   const [isDark, setIsDark] = useState(true);
+  
+  // Tenta pegar as configurações do app
+  let appSettings;
+  try {
+    appSettings = useAppSettingsContext();
+  } catch {
+    appSettings = null;
+  }
   
   // Observa mudanças no esquema de cores do sistema
   useEffect(() => {
@@ -41,6 +49,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     setIsDark(darkMode);
   };
 
+  // Tema base já tem fontes grandes e acessíveis por padrão
   const currentTheme = isDark ? darkTheme : lightTheme;
 
   const value: ThemeContextType = {

@@ -27,16 +27,30 @@ export default function ResultsScreen() {
   
   const [result, setResult] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   
   const imageAnalyzer = useLoading(apiService.analyzeImage);
   const textExtractor = useLoading(apiService.extractTextFromImage);
   const audioGenerator = useLoading(documentService.generateDocumentAudio);
 
   useEffect(() => {
-    if (params.imageUri) {
-      analyzeContent();
+    if (hasInitialized) return;
+    setHasInitialized(true);
+
+    if (params.analysisResult) {
+      try {
+        const analysisData = JSON.parse(params.analysisResult as string);
+        setResult({
+          type: 'image',
+          imageUri: params.imageUri,
+          analysis: analysisData,
+          text: null,
+          source: params.type || 'unknown',
+        });
+      } catch (error) {
+        console.error('Erro ao carregar análise:', error);
+      }
     } else if (params.documentData) {
-      // Carrega dados de documento já processado
       try {
         const docData = JSON.parse(params.documentData as string);
         setResult({
@@ -45,10 +59,10 @@ export default function ResultsScreen() {
           title: params.title || 'Documento',
         });
       } catch (error) {
-        console.error('Erro ao carregar dados do documento:', error);
+        console.error('Erro ao carregar documento:', error);
       }
     }
-  }, [params]);
+  }, []);
 
   const analyzeContent = async () => {
     if (!params.imageUri) return;
@@ -285,49 +299,123 @@ export default function ResultsScreen() {
             {/* Informações do documento */}
             <Card variant="outlined" style={styles.resultCard}>
               <View style={styles.cardHeader}>
-                <FontAwesome name="file" size={20} color={theme.colors.success} />
+                <FontAwesome name="file" size={24} color={theme.colors.success} />
                 <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
-                  Documento
+                  📄 Documento
                 </Text>
               </View>
               <Text style={[styles.documentTitle, { color: theme.colors.text }]}>
                 {result.title}
               </Text>
-              {result.data.total_caracteres && (
+              
+              {/* Metadados (PDF) */}
+              {result.data.metadata && (
+                <View style={styles.metadataContainer}>
+                  {result.data.metadata.total_pages && (
+                    <Text style={[styles.documentStats, { color: theme.colors.textSecondary }]}>
+                      📄 {result.data.metadata.total_pages} página(s)
+                    </Text>
+                  )}
+                  {result.data.metadata.title && (
+                    <Text style={[styles.documentStats, { color: theme.colors.textSecondary }]}>
+                      📌 {result.data.metadata.title}
+                    </Text>
+                  )}
+                  {result.data.metadata.author && (
+                    <Text style={[styles.documentStats, { color: theme.colors.textSecondary }]}>
+                      ✍️ {result.data.metadata.author}
+                    </Text>
+                  )}
+                </View>
+              )}
+              
+              {/* Confiança do OCR (para imagens) */}
+              {result.data.confidence && (
                 <Text style={[styles.documentStats, { color: theme.colors.textSecondary }]}>
-                  {result.data.total_caracteres} caracteres • {result.data.total_palavras} palavras
+                  🎯 Confiança: {(result.data.confidence * 100).toFixed(0)}%
                 </Text>
               )}
             </Card>
 
             {/* Resumo do documento */}
-            {result.data.resumo?.resumo && (
+            {result.data.resumo && (
               <Card variant="outlined" style={styles.resultCard}>
                 <View style={styles.cardHeader}>
-                  <FontAwesome name="file-text-o" size={20} color={theme.colors.info} />
+                  <FontAwesome name="file-text-o" size={24} color={theme.colors.info} />
                   <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
-                    Resumo
+                    📝 Resumo Inteligente
                   </Text>
                 </View>
                 <Text style={[styles.summaryText, { color: theme.colors.text }]}>
-                  {result.data.resumo.resumo}
+                  {result.data.resumo}
                 </Text>
+                
+                {/* Palavras-chave */}
+                {result.data.palavras_chave && result.data.palavras_chave.length > 0 && (
+                  <View style={styles.keywordsContainer}>
+                    <Text style={[styles.keywordsTitle, { color: theme.colors.textSecondary }]}>
+                      🔑 Palavras-chave:
+                    </Text>
+                    <View style={styles.keywordsList}>
+                      {result.data.palavras_chave.map((keyword: string, index: number) => (
+                        <View 
+                          key={index} 
+                          style={[styles.keywordTag, { backgroundColor: theme.colors.primaryLight + '20', borderColor: theme.colors.primary }]}
+                        >
+                          <Text style={[styles.keywordText, { color: theme.colors.primary }]}>
+                            {keyword}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+                
                 <Button
                   title="🔊 Ouvir Resumo"
                   variant="outline"
-                  onPress={() => generateAudio(result.data.resumo.resumo)}
+                  size="large"
+                  onPress={() => generateAudio(result.data.resumo)}
                   style={styles.audioButton}
                 />
               </Card>
             )}
 
-            {/* Texto completo do documento */}
-            {result.data.texto_extraido && (
+            {/* Estrutura do documento (títulos) */}
+            {result.data.structure?.headings && result.data.structure.headings.length > 0 && (
               <Card variant="outlined" style={styles.resultCard}>
                 <View style={styles.cardHeader}>
-                  <FontAwesome name="align-left" size={20} color={theme.colors.warning} />
+                  <FontAwesome name="list" size={24} color={theme.colors.secondary} />
                   <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
-                    Texto Completo
+                    📑 Estrutura
+                  </Text>
+                </View>
+                {result.data.structure.headings.slice(0, 5).map((heading: any, index: number) => (
+                  <Text 
+                    key={index}
+                    style={[
+                      styles.headingItem, 
+                      { 
+                        color: theme.colors.text,
+                        marginLeft: (heading.level - 1) * 16,
+                        fontSize: heading.level === 1 ? 17 : 15,
+                        fontWeight: heading.level === 1 ? 'bold' : '600'
+                      }
+                    ]}
+                  >
+                    {heading.level === 1 ? '📌' : '▪'} {heading.text}
+                  </Text>
+                ))}
+              </Card>
+            )}
+
+            {/* Texto completo do documento */}
+            {result.data.text_content && (
+              <Card variant="outlined" style={styles.resultCard}>
+                <View style={styles.cardHeader}>
+                  <FontAwesome name="align-left" size={24} color={theme.colors.warning} />
+                  <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
+                    📖 Texto Completo
                   </Text>
                 </View>
                 <ScrollView 
@@ -336,13 +424,14 @@ export default function ResultsScreen() {
                   showsVerticalScrollIndicator={false}
                 >
                   <Text style={[styles.fullText, { color: theme.colors.text }]}>
-                    {result.data.texto_extraido}
+                    {result.data.text_content}
                   </Text>
                 </ScrollView>
                 <Button
                   title="🔊 Ouvir Documento"
                   variant="outline"
-                  onPress={() => generateAudio(result.data.texto_extraido)}
+                  size="large"
+                  onPress={() => generateAudio(result.data.text_content)}
                   style={styles.audioButton}
                 />
               </Card>
@@ -390,7 +479,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
   },
   content: {
@@ -400,18 +489,18 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   loadingText: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '600',
     marginTop: 16,
     textAlign: 'center',
   },
   loadingSubtext: {
-    fontSize: 14,
+    fontSize: 17,
     marginTop: 8,
     textAlign: 'center',
   },
   errorText: {
-    fontSize: 18,
+    fontSize: 22,
     textAlign: 'center',
     marginTop: 16,
   },
@@ -432,31 +521,32 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
     marginLeft: 8,
   },
   analysisText: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 19,
+    lineHeight: 28,
     marginBottom: 12,
   },
   extractedText: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 17,
+    lineHeight: 26,
     marginBottom: 12,
   },
   documentTitle: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '600',
     marginBottom: 8,
   },
   documentStats: {
-    fontSize: 14,
+    fontSize: 16,
+    lineHeight: 24,
   },
   summaryText: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 18,
+    lineHeight: 28,
     marginBottom: 12,
   },
   textContainer: {
@@ -464,8 +554,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   fullText: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 16,
+    lineHeight: 24,
   },
   audioButton: {
     marginTop: 8,
@@ -478,5 +568,37 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
+  },
+  metadataContainer: {
+    marginTop: 8,
+    gap: 4,
+  },
+  keywordsContainer: {
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  keywordsTitle: {
+    fontSize: 15,
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  keywordsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  keywordTag: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  keywordText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  headingItem: {
+    marginBottom: 8,
+    lineHeight: 22,
   },
 });
