@@ -1,50 +1,40 @@
 export interface Colors {
-  // Cores primárias
   primary: string;
   primaryLight: string;
   primaryDark: string;
   
-  // Cores secundárias
   secondary: string;
   secondaryLight: string;
   secondaryDark: string;
   
-  // Cores de fundo
   background: string;
   backgroundSecondary: string;
   backgroundCard: string;
   
-  // Cores de superfície
   surface: string;
   surfaceVariant: string;
   
-  // Cores de texto
   text: string;
   textSecondary: string;
   textDisabled: string;
   textInverse: string;
   
-  // Cores de estado
   success: string;
   warning: string;
   error: string;
   info: string;
   
-  // Cores de contorno
   outline: string;
   outlineVariant: string;
   
-  // Cores especiais
   shadow: string;
   overlay: string;
   
-  // Cores de acessibilidade
   highContrast: string;
   lowContrast: string;
 }
 
 export interface Typography {
-  // Tamanhos de fonte
   fontSize: {
     xs: number;
     sm: number;
@@ -55,7 +45,6 @@ export interface Typography {
     xxxl: number;
   };
   
-  // Pesos de fonte
   fontWeight: {
     light: '300';
     regular: '400';
@@ -65,7 +54,6 @@ export interface Typography {
     extrabold: '800';
   };
   
-  // Alturas de linha
   lineHeight: {
     xs: number;
     sm: number;
@@ -74,7 +62,6 @@ export interface Typography {
     xl: number;
   };
   
-  // Famílias de fonte
   fontFamily: {
     regular: string;
     medium: string;

@@ -20,7 +20,6 @@ interface ThemeProviderProps {
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [isDark, setIsDark] = useState(true);
   
-  // Tenta pegar as configurações do app
   let appSettings;
   try {
     appSettings = useAppSettingsContext();
@@ -28,7 +27,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     appSettings = null;
   }
   
-  // Observa mudanças no esquema de cores do sistema
   useEffect(() => {
     const systemColorScheme = Appearance.getColorScheme();
     setIsDark(systemColorScheme === 'dark' || systemColorScheme === null);
@@ -49,7 +47,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     setIsDark(darkMode);
   };
 
-  // Tema base já tem fontes grandes e acessíveis por padrão
   const currentTheme = isDark ? darkTheme : lightTheme;
 
   const value: ThemeContextType = {
@@ -74,20 +71,17 @@ export const useTheme = (): ThemeContextType => {
   return context;
 };
 
-// Hook para acessibilidade - detecta se o usuário prefere alto contraste
 export const useAccessibility = () => {
   const { theme, isDark } = useTheme();
   
   return {
     theme,
     isDark,
-    // Retorna cores com maior contraste para melhor acessibilidade
     highContrastColors: {
       text: isDark ? '#FFFFFF' : '#000000',
       background: isDark ? '#000000' : '#FFFFFF',
       primary: isDark ? '#A78BFA' : '#6D28D9',
     },
-    // Tamanhos de fonte aumentados para acessibilidade
     accessibleFontSizes: {
       ...theme.typography.fontSize,
       xs: theme.typography.fontSize.xs + 2,

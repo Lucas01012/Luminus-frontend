@@ -40,7 +40,6 @@ export const Input: React.FC<InputProps> = ({
       borderRadius: theme.borderRadius.md,
     };
 
-    // Tamanhos
     switch (size) {
       case 'small':
         baseStyle.minHeight = 40;
@@ -55,7 +54,6 @@ export const Input: React.FC<InputProps> = ({
         baseStyle.paddingHorizontal = theme.spacing.md;
     }
 
-    // Variantes
     switch (variant) {
       case 'filled':
         baseStyle.backgroundColor = theme.colors.surface;

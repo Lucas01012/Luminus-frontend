@@ -41,7 +41,6 @@ class ApiService {
     );
   }
 
-  // Testa conectividade básica com o backend
   async testConnection(): Promise<boolean> {
     try {
       await this.api.get('/', { timeout: 5000 });
@@ -66,7 +65,6 @@ class ApiService {
         name: file.name || 'image.jpg',
       };
       
-      // v2.0: Documentos usam campo 'arquivo', imagens usam 'imagem'
       const fieldName = endpoint.includes('documento') ? 'arquivo' : 'imagem';
       formData.append(fieldName, fileData as any);
 
@@ -160,7 +158,6 @@ class ApiService {
     }
   }
 
-  // Análise rápida de imagem
   async analyzeImageFast(imageUri: string) {
     try {
       const file = {
@@ -183,7 +180,6 @@ class ApiService {
     }
   }
 
-  // Análise ultra rápida
   async analyzeImageUltraFast(imageUri: string) {
     try {
       const file = {
@@ -206,7 +202,6 @@ class ApiService {
     }
   }
 
-  // OCR de texto em imagem
   async extractTextFromImage(imageUri: string) {
     try {
       const file = {

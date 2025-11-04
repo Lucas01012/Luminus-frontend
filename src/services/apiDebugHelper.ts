@@ -1,13 +1,7 @@
 import { apiService } from './apiService';
 import Constants from 'expo-constants';
 
-/**
- * Helper para debug e teste da conexão com o backend
- */
 export class ApiDebugHelper {
-  /**
-   * Testa a conexão básica com o backend
-   */
   static async testConnection(): Promise<{ success: boolean; message: string; details?: any }> {
     try {
       const baseUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL || 'não configurado';
@@ -82,9 +76,6 @@ export class ApiDebugHelper {
     console.log('Expo Version:', Constants.expoVersion);
   }
 
-  /**
-   * Verifica configuração da API
-   */
   static checkConfiguration(): { isConfigured: boolean; url: string; warnings: string[] } {
     const url = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL;
     const warnings: string[] = [];

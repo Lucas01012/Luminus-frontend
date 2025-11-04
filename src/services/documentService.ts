@@ -76,7 +76,6 @@ export interface DocumentResponse {
 }
 
 class DocumentService {
-  // Processar documentos (PDF, DOCX, imagens) - 1 página com resumo automático
   async processDocument(
     documentUri: string,
     documentType: string,
@@ -88,32 +87,23 @@ class DocumentService {
         type: documentType,
         name: `document.${documentType.split('/').pop()}`,
       };
-
-      // Backend agora usa funções especializadas:
-      // - extract_text_from_pdf() para PDFs (primeira página)
-      // - extract_text_from_docx() para Word
-      // - extract_text_from_image() para imagens/documentos escaneados
-      // - generate_document_summary() para resumo com Gemini
       
       const additionalData: Record<string, string> = {};
       
       if (options?.incluirResumo !== undefined) {
         additionalData.gerar_resumo = options.incluirResumo ? 'true' : 'false';
       } else {
-        additionalData.gerar_resumo = 'true'; // Sempre gera resumo por padrão
+        additionalData.gerar_resumo = 'true';
       }
 
-      // v2.0: Endpoint correto é /documento/processar com campo 'arquivo'
       const response = await apiService['uploadFile'](
         '/documento/processar',
         file,
         additionalData
       );
 
-      // Valida e estrutura a resposta
       const documentData: DocumentResponse = response.data;
 
-      // Verifica se tem erro
       if ('erro' in documentData) {
         return {
           success: false,
@@ -126,7 +116,6 @@ class DocumentService {
         data: documentData,
       };
     } catch (error: any) {
-      // Tratamento de erro melhorado
       let errorMessage = 'Erro ao processar documento';
       
       if (error.response?.status === 404) {
@@ -146,7 +135,6 @@ class DocumentService {
     }
   }
 
-  // Buscar texto no documento
   async searchInDocument(options: SearchDocumentOptions) {
     try {
       const response = await apiService['api'].post(
@@ -166,7 +154,6 @@ class DocumentService {
     }
   }
 
-  // Gerar áudio do documento (TTS)
   async generateDocumentAudio(text: string, options?: TTSOptions) {
     try {
       const payload = {
@@ -191,7 +178,6 @@ class DocumentService {
     }
   }
 
-  // Listar vozes disponíveis
   async getAvailableVoices(language: string = 'pt-BR') {
     try {
       const response = await apiService['api'].get(
@@ -210,7 +196,6 @@ class DocumentService {
     }
   }
 
-  // OCR especializado para documentos em imagem
   async extractTextFromDocumentImage(imageUri: string) {
     try {
       const file = {
