@@ -126,16 +126,23 @@ export default function DocumentsScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
+        <View style={styles.iconContainer}>
+          <FontAwesome 
+            name="file-text-o" 
+            size={48} 
+            color={theme.colors.primary}
+          />
+        </View>
         <Text 
           style={[styles.title, { color: theme.colors.text }]}
           accessibilityRole="header"
         >
-          📄 Documentos
+          Documentos
         </Text>
         <Text 
           style={[styles.subtitle, { color: theme.colors.textSecondary }]}
         >
-          Leia 1 página e receba um resumo inteligente
+          Leia e compreenda documentos PDF e DOCX
         </Text>
       </View>
 
@@ -148,38 +155,54 @@ export default function DocumentsScreen() {
           accessibilityLabel="Selecionar documento para processar"
           accessibilityRole="button"
         >
-          <FontAwesome 
-            name={documentProcessor.loading ? "spinner" : "file-text-o"} 
-            size={64} 
-            color={theme.colors.primary}
-          />
+          <View style={[
+            styles.uploadIconContainer,
+            { backgroundColor: documentProcessor.loading ? theme.colors.surfaceVariant : theme.colors.primaryLight + '20' }
+          ]}>
+            <FontAwesome 
+              name={documentProcessor.loading ? "spinner" : "upload"} 
+              size={40} 
+              color={theme.colors.primary}
+            />
+          </View>
           <Text 
             style={[styles.uploadText, { color: theme.colors.text }]}
           >
-            {documentProcessor.loading ? 'Processando...' : 'Selecionar Documento'}
+            {documentProcessor.loading ? 'Processando documento...' : 'Selecionar Documento'}
           </Text>
           <Text 
             style={[styles.uploadSubtext, { color: theme.colors.textSecondary }]}
           >
-            Apenas a 1ª página será lida e resumida
+            {documentProcessor.loading 
+              ? 'Extraindo texto e gerando resumo...' 
+              : 'PDF, DOCX ou imagens • Apenas 1ª página'
+            }
           </Text>
         </TouchableOpacity>
       </Card>
 
       {/* Erro de processamento */}
       {documentProcessor.error && (
-        <Card variant="outlined" style={styles.errorCard}>
+        <Card 
+          variant="outlined" 
+          style={[styles.errorCard, { borderColor: theme.colors.error, borderWidth: 2 }]}
+        >
           <View style={styles.errorContent}>
-            <FontAwesome name="exclamation-circle" size={32} color={theme.colors.error} />
-            <Text style={[styles.errorText, { color: theme.colors.error }]}>
+            <View style={[styles.errorIconContainer, { backgroundColor: theme.colors.error + '15' }]}>
+              <FontAwesome name="exclamation-triangle" size={28} color={theme.colors.error} />
+            </View>
+            <Text style={[styles.errorTitle, { color: theme.colors.error }]}>
+              Erro ao processar
+            </Text>
+            <Text style={[styles.errorText, { color: theme.colors.textSecondary }]}>
               {documentProcessor.error}
             </Text>
             <Button
               title="Tentar Novamente"
               variant="outline"
-              size="medium"
+              size="large"
               onPress={() => documentProcessor.reset()}
-              style={{ marginTop: 12 }}
+              style={{ marginTop: 16, width: '100%' }}
             />
           </View>
         </Card>
@@ -187,12 +210,15 @@ export default function DocumentsScreen() {
 
       {/* Formatos suportados */}
       <View style={styles.section}>
-        <Text 
-          style={[styles.sectionTitle, { color: theme.colors.text }]}
-          accessibilityRole="header"
-        >
-          📋 Formatos Suportados
-        </Text>
+        <View style={styles.sectionHeader}>
+          <FontAwesome name="check-circle" size={24} color={theme.colors.success} />
+          <Text 
+            style={[styles.sectionTitle, { color: theme.colors.text }]}
+            accessibilityRole="header"
+          >
+            Formatos Aceitos
+          </Text>
+        </View>
         
         <View style={styles.formatsGrid}>
           {supportedFormats.map((format, index) => (
@@ -202,26 +228,33 @@ export default function DocumentsScreen() {
               style={styles.formatCard}
             >
               <View style={styles.formatContent}>
-                <FontAwesome 
-                  name={format.icon as any} 
-                  size={42} 
-                  color={format.color}
-                />
-                <Text 
-                  style={[styles.formatType, { color: theme.colors.text }]}
-                >
-                  {format.type}
-                </Text>
-                <Text 
-                  style={[styles.formatDesc, { color: theme.colors.textSecondary }]}
-                >
-                  {format.description}
-                </Text>
-                <Text 
-                  style={[styles.formatExtensions, { color: theme.colors.textDisabled }]}
-                >
-                  {format.extensions.join(', ')}
-                </Text>
+                <View style={[
+                  styles.formatIconContainer,
+                  { backgroundColor: format.color + '15' }
+                ]}>
+                  <FontAwesome 
+                    name={format.icon as any} 
+                    size={32} 
+                    color={format.color}
+                  />
+                </View>
+                <View style={styles.formatInfo}>
+                  <Text 
+                    style={[styles.formatType, { color: theme.colors.text }]}
+                  >
+                    {format.type}
+                  </Text>
+                  <Text 
+                    style={[styles.formatDesc, { color: theme.colors.textSecondary }]}
+                  >
+                    {format.description}
+                  </Text>
+                  <Text 
+                    style={[styles.formatExtensions, { color: theme.colors.textDisabled }]}
+                  >
+                    {format.extensions.join(' • ')}
+                  </Text>
+                </View>
               </View>
             </Card>
           ))}
@@ -231,12 +264,15 @@ export default function DocumentsScreen() {
       {/* Documentos recentes */}
       {recentDocuments.length > 0 && (
         <View style={styles.section}>
-          <Text 
-            style={[styles.sectionTitle, { color: theme.colors.text }]}
-            accessibilityRole="header"
-          >
-            🕐 Recentes
-          </Text>
+          <View style={styles.sectionHeader}>
+            <FontAwesome name="clock-o" size={24} color={theme.colors.info} />
+            <Text 
+              style={[styles.sectionTitle, { color: theme.colors.text }]}
+              accessibilityRole="header"
+            >
+              Recentes
+            </Text>
+          </View>
           
           {recentDocuments.map((doc) => (
             <Card 
@@ -249,30 +285,39 @@ export default function DocumentsScreen() {
                 onPress={() => openRecentDocument(doc)}
                 accessibilityLabel={`Documento ${doc.name}`}
                 accessibilityRole="button"
+                activeOpacity={0.7}
               >
-                <View style={styles.recentInfo}>
+                <View style={[
+                  styles.recentIconContainer,
+                  { backgroundColor: theme.colors.primary + '15' }
+                ]}>
                   <FontAwesome 
-                    name="file-text" 
-                    size={24} 
+                    name="file-text-o" 
+                    size={20} 
                     color={theme.colors.primary}
                   />
-                  <View style={styles.recentDetails}>
-                    <Text 
-                      style={[styles.recentName, { color: theme.colors.text }]}
-                      numberOfLines={1}
-                    >
-                      {doc.name}
-                    </Text>
-                    <Text 
-                      style={[styles.recentDate, { color: theme.colors.textSecondary }]}
-                    >
-                      Processado {new Date(doc.processedAt).toLocaleDateString()}
-                    </Text>
-                  </View>
+                </View>
+                <View style={styles.recentDetails}>
+                  <Text 
+                    style={[styles.recentName, { color: theme.colors.text }]}
+                    numberOfLines={2}
+                  >
+                    {doc.name}
+                  </Text>
+                  <Text 
+                    style={[styles.recentDate, { color: theme.colors.textSecondary }]}
+                  >
+                    {new Date(doc.processedAt).toLocaleDateString('pt-BR', {
+                      day: '2-digit',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </Text>
                 </View>
                 <FontAwesome 
                   name="chevron-right" 
-                  size={20} 
+                  size={18} 
                   color={theme.colors.textSecondary}
                 />
               </TouchableOpacity>
@@ -282,30 +327,64 @@ export default function DocumentsScreen() {
       )}
 
       {/* Recursos disponíveis */}
-      <Card variant="outlined" style={styles.featuresCard}>
-        <Text 
-          style={[styles.featuresTitle, { color: theme.colors.text }]}
-        >
-          ✨ Recursos
-        </Text>
-        <View style={styles.featuresList}>
-          <Text style={[styles.featureItem, { color: theme.colors.textSecondary }]}>
-            📖 Lê apenas a primeira página (rápido!)
-          </Text>
-          <Text style={[styles.featureItem, { color: theme.colors.textSecondary }]}>
-            🤖 Resumo inteligente automático
-          </Text>
-          <Text style={[styles.featureItem, { color: theme.colors.textSecondary }]}>
-            🔍 Extração de texto completa
-          </Text>
-          <Text style={[styles.featureItem, { color: theme.colors.textSecondary }]}>
-            📷 OCR para documentos escaneados
-          </Text>
-          <Text style={[styles.featureItem, { color: theme.colors.textSecondary }]}>
-            🔊 Conversão para áudio (TTS)
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <FontAwesome name="magic" size={24} color={theme.colors.warning} />
+          <Text 
+            style={[styles.sectionTitle, { color: theme.colors.text }]}
+          >
+            O que você pode fazer
           </Text>
         </View>
-      </Card>
+        <Card variant="outlined" style={styles.featuresCard}>
+          <View style={styles.featuresList}>
+            <View style={styles.featureRow}>
+              <View style={[styles.featureBullet, { backgroundColor: theme.colors.success + '20' }]}>
+                <FontAwesome name="bolt" size={16} color={theme.colors.success} />
+              </View>
+              <Text style={[styles.featureItem, { color: theme.colors.text }]}>
+                Leitura rápida da primeira página
+              </Text>
+            </View>
+            
+            <View style={styles.featureRow}>
+              <View style={[styles.featureBullet, { backgroundColor: theme.colors.info + '20' }]}>
+                <FontAwesome name="lightbulb-o" size={16} color={theme.colors.info} />
+              </View>
+              <Text style={[styles.featureItem, { color: theme.colors.text }]}>
+                Resumo inteligente com IA
+              </Text>
+            </View>
+            
+            <View style={styles.featureRow}>
+              <View style={[styles.featureBullet, { backgroundColor: theme.colors.warning + '20' }]}>
+                <FontAwesome name="search" size={16} color={theme.colors.warning} />
+              </View>
+              <Text style={[styles.featureItem, { color: theme.colors.text }]}>
+                Extração completa de texto
+              </Text>
+            </View>
+            
+            <View style={styles.featureRow}>
+              <View style={[styles.featureBullet, { backgroundColor: theme.colors.secondary + '20' }]}>
+                <FontAwesome name="picture-o" size={16} color={theme.colors.secondary} />
+              </View>
+              <Text style={[styles.featureItem, { color: theme.colors.text }]}>
+                OCR para documentos escaneados
+              </Text>
+            </View>
+            
+            <View style={styles.featureRow}>
+              <View style={[styles.featureBullet, { backgroundColor: theme.colors.primary + '20' }]}>
+                <FontAwesome name="volume-up" size={16} color={theme.colors.primary} />
+              </View>
+              <Text style={[styles.featureItem, { color: theme.colors.text }]}>
+                Conversão para áudio (TTS)
+              </Text>
+            </View>
+          </View>
+        </Card>
+      </View>
     </ScrollView>
   );
 }
@@ -318,17 +397,28 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 32,
     alignItems: 'center',
   },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 12,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 17,
+    fontSize: 18,
     textAlign: 'center',
+    lineHeight: 26,
+    paddingHorizontal: 24,
   },
   uploadCard: {
     marginBottom: 24,
@@ -337,98 +427,154 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 32,
   },
+  uploadIconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
   uploadText: {
     fontSize: 22,
-    fontWeight: '600',
-    marginTop: 16,
-  },
-  uploadSubtext: {
-    fontSize: 16,
+    fontWeight: '700',
     marginTop: 8,
     textAlign: 'center',
   },
+  uploadSubtext: {
+    fontSize: 17,
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: 16,
+  },
   errorCard: {
-    marginBottom: 16,
+    marginBottom: 24,
   },
   errorContent: {
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
+  },
+  errorIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  errorTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
   },
   errorText: {
-    fontSize: 19,
+    fontSize: 17,
     textAlign: 'center',
-    marginTop: 12,
+    lineHeight: 24,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 32,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 16,
   },
   formatsGrid: {
     gap: 12,
   },
   formatCard: {
-    marginBottom: 8,
+    marginBottom: 0,
   },
   formatContent: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 24,
+    padding: 16,
+    gap: 16,
+  },
+  formatIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  formatInfo: {
+    flex: 1,
   },
   formatType: {
     fontSize: 20,
-    fontWeight: '600',
-    marginTop: 12,
+    fontWeight: '700',
+    marginBottom: 4,
   },
   formatDesc: {
-    fontSize: 17,
-    marginTop: 6,
-    textAlign: 'center',
+    fontSize: 16,
+    marginBottom: 6,
+    lineHeight: 22,
   },
   formatExtensions: {
-    fontSize: 15,
-    marginTop: 8,
+    fontSize: 14,
+    fontWeight: '500',
   },
   recentCard: {
-    marginBottom: 8,
+    marginBottom: 12,
   },
   recentContent: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
+    gap: 12,
   },
-  recentInfo: {
-    flex: 1,
-    flexDirection: 'row',
+  recentIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   recentDetails: {
     flex: 1,
-    marginLeft: 12,
   },
   recentName: {
-    fontSize: 19,
-    fontWeight: '500',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+    lineHeight: 24,
   },
   recentDate: {
     fontSize: 15,
-    marginTop: 2,
+    fontWeight: '500',
   },
   featuresCard: {
-    marginTop: 16,
-  },
-  featuresTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 12,
+    padding: 0,
   },
   featuresList: {
-    gap: 10,
+    padding: 16,
+    gap: 16,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  featureBullet: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   featureItem: {
+    flex: 1,
     fontSize: 17,
-    lineHeight: 26,
+    fontWeight: '500',
+    lineHeight: 24,
   },
 });
