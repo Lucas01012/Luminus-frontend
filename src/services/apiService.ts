@@ -1,6 +1,9 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const AUTH_TOKEN_KEY = '@luminus_auth_token';
 
 function getBaseURL(): string {
   const configURL = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL;
@@ -32,10 +35,29 @@ class ApiService {
       },
     });
 
+    this.api.interceptors.request.use(
+      async (config) => {
+        const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
     this.api.interceptors.response.use(
       (response) => response,
-      (error) => {
+      async (error) => {
         console.error('API Error:', error.response?.data || error.message);
+        
+        if (error.response?.status === 401) {
+          await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+          await AsyncStorage.removeItem('@luminus_user_data');
+        }
+        
         return Promise.reject(error);
       }
     );
@@ -48,6 +70,36 @@ class ApiService {
     } catch (error: any) {
       console.error('Erro ao conectar com backend:', error.message);
       return false;
+    }
+  }
+
+  async getUserProfile(): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await this.api.get('/perfil-usuario');
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.erro || 'Erro ao obter perfil do usuário',
+      };
+    }
+  }
+
+  async testProtectedRoute(): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await this.api.get('/rota-protegida');
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.erro || 'Erro ao acessar rota protegida',
+      };
     }
   }
 

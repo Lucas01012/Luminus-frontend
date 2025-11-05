@@ -16,10 +16,13 @@ import { useTheme } from '@/src/theme/ThemeProvider';
 import { Button, Card } from '@/src/components/ui';
 import { useFeedback, FeedbackType } from '@/src/hooks';
 import { useAppSettingsContext } from '@/src/contexts/AppSettingsContext';
+import { useAuth } from '@/src/contexts/AuthContext';
 import ApiDebugHelper from '@/src/services/apiDebugHelper';
+import { router } from 'expo-router';
 
 export default function SettingsScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
+  const { user, isAuthenticated, logout, sendVerificationEmail } = useAuth();
   const { 
     triggerFeedback, 
     isVibrationEnabled, 
@@ -28,7 +31,7 @@ export default function SettingsScreen() {
     toggleSound 
   } = useFeedback();
   
-  const { settings, updateSetting, resetSettings: resetAppSettings, getFontScale } = useAppSettingsContext();
+  const { settings, updateSetting, resetSettings: resetAppSettings } = useAppSettingsContext();
 
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'ok' | 'error'>('unknown');
@@ -192,6 +195,78 @@ export default function SettingsScreen() {
     },
   ];
 
+  const handleLogin = async () => {
+    await triggerFeedback(FeedbackType.LIGHT);
+    router.push('/login');
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Sair da conta',
+      'Deseja realmente sair?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sair',
+          style: 'destructive',
+          onPress: async () => {
+            await triggerFeedback(FeedbackType.MEDIUM);
+            await logout();
+            Alert.alert('✅ Sucesso', 'Você saiu da sua conta');
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSendVerificationEmail = async () => {
+    await triggerFeedback(FeedbackType.LIGHT);
+    
+    try {
+      const result = await sendVerificationEmail();
+      
+      if (result.success) {
+        await triggerFeedback(FeedbackType.SUCCESS);
+        Alert.alert(
+          '✅ Email Enviado!',
+          'Verifique sua caixa de entrada e clique no link de verificação.'
+        );
+      } else {
+        await triggerFeedback(FeedbackType.ERROR);
+        Alert.alert('❌ Erro', result.error || 'Falha ao enviar email');
+      }
+    } catch (error: any) {
+      await triggerFeedback(FeedbackType.ERROR);
+      Alert.alert('❌ Erro', `Erro ao enviar email: ${error.message}`);
+    }
+  };
+
+  const testAuthenticatedRoute = async () => {
+    await triggerFeedback(FeedbackType.LIGHT);
+    setTestingConnection(true);
+    
+    try {
+      const apiService = (await import('@/src/services/apiService')).default;
+      const result = await apiService.testProtectedRoute();
+      
+      if (result.success) {
+        await triggerFeedback(FeedbackType.SUCCESS);
+        Alert.alert(
+          '✅ Autenticação OK!', 
+          `Rota protegida acessada com sucesso!\n\nResposta: ${JSON.stringify(result.data, null, 2)}`
+        );
+      } else {
+        await triggerFeedback(FeedbackType.ERROR);
+        Alert.alert('❌ Erro', result.error || 'Falha ao acessar rota protegida');
+      }
+    } catch (error: any) {
+      await triggerFeedback(FeedbackType.ERROR);
+      Alert.alert('❌ Erro', `Erro ao testar autenticação: ${error.message}`);
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
   return (
     <ScrollView 
       style={[styles.container, { backgroundColor: theme.colors.background }]}
@@ -211,6 +286,96 @@ export default function SettingsScreen() {
         >
           Personalize sua experiência no Luminus
         </Text>
+      </View>
+
+      {/* Seção de Autenticação */}
+      <View style={styles.section}>
+        <Text 
+          style={[styles.sectionTitle, { color: theme.colors.text }]}
+          accessibilityRole="header"
+        >
+          Conta
+        </Text>
+        
+        <Card variant="outlined">
+          {isAuthenticated ? (
+            <View>
+              <View style={styles.userInfo}>
+                <View style={[styles.userAvatar, { backgroundColor: theme.colors.primary }]}>
+                  <FontAwesome name="user" size={32} color="#FFFFFF" />
+                </View>
+                <View style={styles.userDetails}>
+                  <Text style={[styles.userName, { color: theme.colors.text }]}>
+                    {user?.displayName || 'Usuário'}
+                  </Text>
+                  <Text style={[styles.userEmail, { color: theme.colors.textSecondary }]}>
+                    {user?.email}
+                  </Text>
+                  {user?.emailVerified && (
+                    <View style={styles.verifiedBadge}>
+                      <FontAwesome name="check-circle" size={14} color={theme.colors.success} />
+                      <Text style={[styles.verifiedText, { color: theme.colors.success }]}>
+                        Verificado
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+              
+              {!user?.emailVerified && (
+                <View style={[styles.verificationBanner, { 
+                  backgroundColor: theme.colors.warning + '20',
+                  borderColor: theme.colors.warning 
+                }]}>
+                  <FontAwesome name="exclamation-triangle" size={20} color={theme.colors.warning} />
+                  <View style={styles.verificationTextContainer}>
+                    <Text style={[styles.verificationTitle, { color: theme.colors.text }]}>
+                      Email não verificado
+                    </Text>
+                    <Text style={[styles.verificationText, { color: theme.colors.textSecondary }]}>
+                      Verifique seu email para ter acesso completo
+                    </Text>
+                  </View>
+                  <Button
+                    title="Enviar link"
+                    variant="outline"
+                    onPress={handleSendVerificationEmail}
+                    style={styles.verificationButton}
+                  />
+                </View>
+              )}
+              
+              <Button
+                title="Testar Autenticação"
+                variant="outline"
+                onPress={testAuthenticatedRoute}
+                disabled={testingConnection}
+                style={{ marginBottom: 12 }}
+              />
+              <Button
+                title="Sair da conta"
+                variant="outline"
+                onPress={handleLogout}
+                style={styles.logoutButton}
+              />
+            </View>
+          ) : (
+            <View style={styles.loginPrompt}>
+              <FontAwesome name="user-circle" size={48} color={theme.colors.textDisabled} />
+              <Text style={[styles.loginPromptTitle, { color: theme.colors.text }]}>
+                Faça login para sincronizar
+              </Text>
+              <Text style={[styles.loginPromptText, { color: theme.colors.textSecondary }]}>
+                Entre para salvar suas preferências e histórico na nuvem
+              </Text>
+              <Button
+                title="Entrar ou criar conta"
+                onPress={handleLogin}
+                style={styles.loginButton}
+              />
+            </View>
+          )}
+        </Card>
       </View>
 
       {/* Seções de configurações */}
@@ -527,5 +692,91 @@ const styles = StyleSheet.create({
   connectionButtons: {
     flexDirection: 'row',
     gap: 8,
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    marginBottom: 16,
+  },
+  userAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  userDetails: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 19,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 15,
+    marginBottom: 4,
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  verifiedText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  logoutButton: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  verificationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 12,
+  },
+  verificationTextContainer: {
+    flex: 1,
+  },
+  verificationTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  verificationText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  verificationButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minWidth: 100,
+  },
+  loginPrompt: {
+    alignItems: 'center',
+    padding: 32,
+    gap: 12,
+  },
+  loginPromptTitle: {
+    fontSize: 19,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  loginPromptText: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  loginButton: {
+    marginTop: 8,
+    minWidth: 200,
   },
 });

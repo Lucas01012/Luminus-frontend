@@ -7,6 +7,7 @@ import 'react-native-reanimated';
 
 import { ThemeProvider } from '@/src/theme/ThemeProvider';
 import { AppSettingsProvider } from '@/src/contexts/AppSettingsContext';
+import { AuthProvider } from '@/src/contexts/AuthContext';
 import { StatusBar } from 'expo-status-bar';
 
 export {
@@ -50,12 +51,16 @@ function RootLayoutNav() {
   return (
     <AppSettingsProvider>
       <ThemeProvider>
-        <StatusBar style="light" backgroundColor="#0F0F0F" />
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="results" options={{ headerShown: false, presentation: 'modal' }} />
-        </Stack>
+        <AuthProvider>
+          <StatusBar style="light" backgroundColor="#0F0F0F" />
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="results" options={{ headerShown: false, presentation: 'modal' }} />
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+          </Stack>
+        </AuthProvider>
       </ThemeProvider>
     </AppSettingsProvider>
   );
