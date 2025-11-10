@@ -141,12 +141,21 @@ export default function ResultsScreen() {
           fullContent = 'Sem conteúdo disponível';
         }
         
-        await historyService.addItem({
+        const result = await historyService.addItem({
           type: 'image',
           title: generateTitle(data),
           content: fullContent.trim(),
           imageUri: data.imageUri as string,
-        });
+          metadata: {
+            confidence: data.analysis?.confianca,
+            processingTime: data.analysis?.processing_time,
+            fileName: data.imageUri?.split('/').pop() || 'image.jpg',
+          },
+        }, data.analysis);
+
+        if (!result.success) {
+          Alert.alert('Aviso', result.error || 'Não foi possível salvar no histórico.');
+        }
       } else if (data.type === 'document') {
         const docData = data.data;
         let fullContent = '';
@@ -163,7 +172,7 @@ export default function ResultsScreen() {
           fullContent = 'Sem conteúdo disponível';
         }
         
-        await historyService.addItem({
+        const result = await historyService.addItem({
           type: 'document',
           title: generateTitle(data),
           content: fullContent.trim(),
@@ -171,11 +180,17 @@ export default function ResultsScreen() {
             pages: docData.metadata?.total_pages,
             confidence: docData.confidence,
             keywords: docData.palavras_chave,
+            fileName: data.fileName || 'document.pdf',
+            fileSize: docData.arquivo_info?.tamanho_bytes,
           },
-        });
+        }, docData);
+
+        if (!result.success) {
+          Alert.alert('Aviso', result.error || 'Não foi possível salvar no histórico.');
+        }
       }
     } catch (error) {
-      console.error('Erro ao salvar no histórico:', error);
+      Alert.alert('Erro', 'Erro inesperado ao salvar no histórico');
     }
   };
 

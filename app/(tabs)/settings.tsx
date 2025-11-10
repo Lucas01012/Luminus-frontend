@@ -17,12 +17,12 @@ import { Button, Card } from '@/src/components/ui';
 import { useFeedback, FeedbackType } from '@/src/hooks';
 import { useAppSettingsContext } from '@/src/contexts/AppSettingsContext';
 import { useAuth } from '@/src/contexts/AuthContext';
-import ApiDebugHelper from '@/src/services/apiDebugHelper';
 import { router } from 'expo-router';
+import biometricService from '@/src/services/biometricService';
 
 export default function SettingsScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
-  const { user, isAuthenticated, logout, sendVerificationEmail } = useAuth();
+  const { user, logout } = useAuth();
   const { 
     triggerFeedback, 
     isVibrationEnabled, 
@@ -33,8 +33,69 @@ export default function SettingsScreen() {
   
   const { settings, updateSetting, resetSettings: resetAppSettings } = useAppSettingsContext();
 
-  const [testingConnection, setTestingConnection] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'ok' | 'error'>('unknown');
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricType, setBiometricType] = useState<string>('biometria');
+
+  useEffect(() => {
+    checkBiometricAvailability();
+  }, []);
+
+  const checkBiometricAvailability = async () => {
+    const available = await biometricService.isAvailable();
+    setBiometricAvailable(available);
+    
+    if (available) {
+      const enabled = await biometricService.isBiometricEnabled();
+      setBiometricEnabled(enabled);
+      
+      const type = await biometricService.getBiometricTypeMessage();
+      setBiometricType(type);
+    }
+  };
+
+  const handleBiometricToggle = async () => {
+    await triggerFeedback(FeedbackType.LIGHT);
+
+    if (!biometricEnabled) {
+      // Ativar: primeiro autentica para confirmar
+      const result = await biometricService.authenticate(
+        `Use sua ${biometricType} para ativar`
+      );
+
+      if (result.success) {
+        await biometricService.setBiometricEnabled(true);
+        setBiometricEnabled(true);
+        await triggerFeedback(FeedbackType.SUCCESS);
+        Alert.alert(
+          '✅ Ativado!',
+          `${biometricType} ativado com sucesso. Agora você pode usar para fazer login.`
+        );
+      } else {
+        await triggerFeedback(FeedbackType.ERROR);
+        Alert.alert('❌ Erro', result.error || 'Não foi possível ativar');
+      }
+    } else {
+      // Desativar: confirma com o usuário
+      Alert.alert(
+        'Desativar biometria?',
+        `Você precisará fazer login com email e senha da próxima vez.`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Desativar',
+            style: 'destructive',
+            onPress: async () => {
+              await biometricService.setBiometricEnabled(false);
+              setBiometricEnabled(false);
+              await triggerFeedback(FeedbackType.MEDIUM);
+              Alert.alert('✅ Desativado', 'Biometria desativada');
+            },
+          },
+        ]
+      );
+    }
+  };
 
   const handleSettingChange = async (
     setter: (value: boolean) => void,
@@ -69,48 +130,6 @@ export default function SettingsScreen() {
     );
   };
 
-  const testConnection = async () => {
-    setTestingConnection(true);
-    setConnectionStatus('unknown');
-    await triggerFeedback(FeedbackType.LIGHT);
-
-    try {
-      const result = await ApiDebugHelper.testConnection();
-      
-      if (result.success) {
-        setConnectionStatus('ok');
-        await triggerFeedback(FeedbackType.SUCCESS);
-        Alert.alert('✅ Conexão OK!', result.message);
-      } else {
-        setConnectionStatus('error');
-        await triggerFeedback(FeedbackType.ERROR);
-        Alert.alert('❌ Erro de Conexão', result.message);
-      }
-
-      console.log('Detalhes:', result.details);
-    } catch (error: any) {
-      setConnectionStatus('error');
-      await triggerFeedback(FeedbackType.ERROR);
-      Alert.alert('❌ Erro', `Não foi possível testar conexão: ${error.message}`);
-    } finally {
-      setTestingConnection(false);
-    }
-  };
-
-  const showDebugInfo = () => {
-    const config = ApiDebugHelper.checkConfiguration();
-    
-    let message = `URL da API: ${config.url}\n\n`;
-    
-    if (config.warnings.length > 0) {
-      message += 'Avisos:\n' + config.warnings.join('\n');
-    } else {
-      message += '✅ Configuração OK!';
-    }
-
-    Alert.alert('🐛 Debug Info', message);
-  };
-
   const resetSettings = async () => {
     await triggerFeedback(FeedbackType.MEDIUM);
     
@@ -132,6 +151,19 @@ export default function SettingsScreen() {
   };
 
   const settingSections = [
+    {
+      title: 'Segurança',
+      settings: biometricAvailable ? [
+        {
+          key: 'biometric',
+          title: biometricType,
+          description: `Usar ${biometricType} para entrar no app`,
+          value: biometricEnabled,
+          onToggle: handleBiometricToggle,
+          icon: 'unlock-alt',
+        },
+      ] : [],
+    },
     {
       title: 'Aparência',
       settings: [
@@ -195,11 +227,6 @@ export default function SettingsScreen() {
     },
   ];
 
-  const handleLogin = async () => {
-    await triggerFeedback(FeedbackType.LIGHT);
-    router.push('/login');
-  };
-
   const handleLogout = async () => {
     Alert.alert(
       'Sair da conta',
@@ -211,60 +238,14 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             await triggerFeedback(FeedbackType.MEDIUM);
+            // Limpa a sessão biométrica antes do logout
+            await biometricService.clearBiometricSession();
             await logout();
             Alert.alert('✅ Sucesso', 'Você saiu da sua conta');
           },
         },
       ]
     );
-  };
-
-  const handleSendVerificationEmail = async () => {
-    await triggerFeedback(FeedbackType.LIGHT);
-    
-    try {
-      const result = await sendVerificationEmail();
-      
-      if (result.success) {
-        await triggerFeedback(FeedbackType.SUCCESS);
-        Alert.alert(
-          '✅ Email Enviado!',
-          'Verifique sua caixa de entrada e clique no link de verificação.'
-        );
-      } else {
-        await triggerFeedback(FeedbackType.ERROR);
-        Alert.alert('❌ Erro', result.error || 'Falha ao enviar email');
-      }
-    } catch (error: any) {
-      await triggerFeedback(FeedbackType.ERROR);
-      Alert.alert('❌ Erro', `Erro ao enviar email: ${error.message}`);
-    }
-  };
-
-  const testAuthenticatedRoute = async () => {
-    await triggerFeedback(FeedbackType.LIGHT);
-    setTestingConnection(true);
-    
-    try {
-      const apiService = (await import('@/src/services/apiService')).default;
-      const result = await apiService.testProtectedRoute();
-      
-      if (result.success) {
-        await triggerFeedback(FeedbackType.SUCCESS);
-        Alert.alert(
-          '✅ Autenticação OK!', 
-          `Rota protegida acessada com sucesso!\n\nResposta: ${JSON.stringify(result.data, null, 2)}`
-        );
-      } else {
-        await triggerFeedback(FeedbackType.ERROR);
-        Alert.alert('❌ Erro', result.error || 'Falha ao acessar rota protegida');
-      }
-    } catch (error: any) {
-      await triggerFeedback(FeedbackType.ERROR);
-      Alert.alert('❌ Erro', `Erro ao testar autenticação: ${error.message}`);
-    } finally {
-      setTestingConnection(false);
-    }
   };
 
   return (
@@ -298,88 +279,35 @@ export default function SettingsScreen() {
         </Text>
         
         <Card variant="outlined">
-          {isAuthenticated ? (
-            <View>
-              <View style={styles.userInfo}>
-                <View style={[styles.userAvatar, { backgroundColor: theme.colors.primary }]}>
-                  <FontAwesome name="user" size={32} color="#FFFFFF" />
-                </View>
-                <View style={styles.userDetails}>
-                  <Text style={[styles.userName, { color: theme.colors.text }]}>
-                    {user?.displayName || 'Usuário'}
-                  </Text>
-                  <Text style={[styles.userEmail, { color: theme.colors.textSecondary }]}>
-                    {user?.email}
-                  </Text>
-                  {user?.emailVerified && (
-                    <View style={styles.verifiedBadge}>
-                      <FontAwesome name="check-circle" size={14} color={theme.colors.success} />
-                      <Text style={[styles.verifiedText, { color: theme.colors.success }]}>
-                        Verificado
-                      </Text>
-                    </View>
-                  )}
-                </View>
+          <View>
+            <View style={styles.userInfo}>
+              <View style={[styles.userAvatar, { backgroundColor: theme.colors.primary }]}>
+                <FontAwesome name="user" size={32} color="#FFFFFF" />
               </View>
-              
-              {!user?.emailVerified && (
-                <View style={[styles.verificationBanner, { 
-                  backgroundColor: theme.colors.warning + '20',
-                  borderColor: theme.colors.warning 
-                }]}>
-                  <FontAwesome name="exclamation-triangle" size={20} color={theme.colors.warning} />
-                  <View style={styles.verificationTextContainer}>
-                    <Text style={[styles.verificationTitle, { color: theme.colors.text }]}>
-                      Email não verificado
-                    </Text>
-                    <Text style={[styles.verificationText, { color: theme.colors.textSecondary }]}>
-                      Verifique seu email para ter acesso completo
-                    </Text>
-                  </View>
-                  <Button
-                    title="Enviar link"
-                    variant="outline"
-                    onPress={handleSendVerificationEmail}
-                    style={styles.verificationButton}
-                  />
-                </View>
-              )}
-              
-              <Button
-                title="Testar Autenticação"
-                variant="outline"
-                onPress={testAuthenticatedRoute}
-                disabled={testingConnection}
-                style={{ marginBottom: 12 }}
-              />
-              <Button
-                title="Sair da conta"
-                variant="outline"
-                onPress={handleLogout}
-                style={styles.logoutButton}
-              />
+              <View style={styles.userDetails}>
+                <Text style={[styles.userName, { color: theme.colors.text }]}>
+                  {user?.displayName || 'Usuário'}
+                </Text>
+                <Text style={[styles.userEmail, { color: theme.colors.textSecondary }]}>
+                  {user?.email}
+                </Text>
+              </View>
             </View>
-          ) : (
-            <View style={styles.loginPrompt}>
-              <FontAwesome name="user-circle" size={48} color={theme.colors.textDisabled} />
-              <Text style={[styles.loginPromptTitle, { color: theme.colors.text }]}>
-                Faça login para sincronizar
-              </Text>
-              <Text style={[styles.loginPromptText, { color: theme.colors.textSecondary }]}>
-                Entre para salvar suas preferências e histórico na nuvem
-              </Text>
-              <Button
-                title="Entrar ou criar conta"
-                onPress={handleLogin}
-                style={styles.loginButton}
-              />
-            </View>
-          )}
+            
+            <Button
+              title="Sair da conta"
+              variant="outline"
+              onPress={handleLogout}
+              style={styles.logoutButton}
+            />
+          </View>
         </Card>
       </View>
 
       {/* Seções de configurações */}
-      {settingSections.map((section, sectionIndex) => (
+      {settingSections
+        .filter(section => section.settings.length > 0) // Filtrar seções vazias
+        .map((section, sectionIndex) => (
         <View key={section.title} style={styles.section}>
           <Text 
             style={[styles.sectionTitle, { color: theme.colors.text }]}
@@ -484,85 +412,6 @@ export default function SettingsScreen() {
             onPress={resetSettings}
             accessibilityLabel="Redefinir todas as configurações para o padrão"
           />
-        </View>
-      </Card>
-
-      {/* Teste de Conexão */}
-      <Card variant="outlined" style={styles.connectionCard}>
-        <Text 
-          style={[styles.systemTitle, { color: theme.colors.text }]}
-        >
-          🌐 Conexão com Backend
-        </Text>
-        
-        <View style={styles.connectionContent}>
-          {connectionStatus === 'ok' && (
-            <View style={styles.connectionStatusRow}>
-              <FontAwesome name="check-circle" size={20} color={theme.colors.success} />
-              <Text style={[styles.connectionStatusText, { color: theme.colors.success }]}>
-                Conectado
-              </Text>
-            </View>
-          )}
-          
-          {connectionStatus === 'error' && (
-            <View style={styles.connectionStatusRow}>
-              <FontAwesome name="times-circle" size={20} color={theme.colors.error} />
-              <Text style={[styles.connectionStatusText, { color: theme.colors.error }]}>
-                Erro de conexão
-              </Text>
-            </View>
-          )}
-          
-          <View style={styles.connectionButtons}>
-            <Button
-              title={testingConnection ? "Testando..." : "Testar Conexão"}
-              variant="outline"
-              size="small"
-              onPress={testConnection}
-              disabled={testingConnection}
-              style={{ flex: 1 }}
-            />
-            <Button
-              title="Debug Info"
-              variant="ghost"
-              size="small"
-              onPress={showDebugInfo}
-              style={{ flex: 1 }}
-            />
-          </View>
-        </View>
-      </Card>
-
-      {/* Informações do sistema */}
-      <Card variant="outlined" style={styles.systemCard}>
-        <Text 
-          style={[styles.systemTitle, { color: theme.colors.text }]}
-        >
-          🔧 Informações do Sistema
-        </Text>
-        <View style={styles.systemInfo}>
-          <Text style={[styles.systemItem, { color: theme.colors.textSecondary }]}>
-            📱 Plataforma: {Platform.OS === 'ios' ? 'iOS' : 'Android'}
-          </Text>
-          <Text style={[styles.systemItem, { color: theme.colors.textSecondary }]}>
-            ✨ Versão: 1.0.0 (Acessível por design)
-          </Text>
-          <Text style={[styles.systemItem, { color: theme.colors.textSecondary }]}>
-            🎨 Tema: {isDark ? 'Escuro' : 'Claro'}
-          </Text>
-          <Text style={[styles.systemItem, { color: theme.colors.textSecondary }]}>
-            🔤 Fontes: Grandes por padrão (19px base)
-          </Text>
-          <Text style={[styles.systemItem, { color: theme.colors.textSecondary }]}>
-            📊 Contraste: 21:1 (WCAG AAA máximo)
-          </Text>
-          <Text style={[styles.systemItem, { color: theme.colors.textSecondary }]}>
-            🔔 Notificações: {settings.notifications ? 'Ativadas' : 'Desativadas'}
-          </Text>
-          <Text style={[styles.systemItem, { color: theme.colors.textSecondary }]}>
-            💾 Auto-save: {settings.autoSave ? 'Ativo' : 'Desativado'}
-          </Text>
         </View>
       </Card>
 

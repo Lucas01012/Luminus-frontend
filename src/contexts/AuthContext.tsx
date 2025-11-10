@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import authService, { UserData, AuthResponse } from '@/src/services/authService';
+import authService from '@/src/services/authService';
+import { UserData, AuthResponse } from '@/src/models';
 import { AppState, AppStateStatus } from 'react-native';
 
 interface AuthContextType {
@@ -30,7 +31,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const currentUser = authService.getUser();
       setUser(currentUser);
     } catch (error) {
-      console.error('Erro ao inicializar autenticação:', error);
     } finally {
       setLoading(false);
     }
@@ -82,7 +82,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const currentUser = authService.getUser();
       setUser(currentUser);
     } catch (error) {
-      console.error('Erro ao atualizar autenticação:', error);
       setUser(null);
     }
   };

@@ -1,23 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FIREBASE_API_KEY } from '@/src/config/firebase';
+import { UserData, AuthResponse } from '@/src/models';
 
 const AUTH_TOKEN_KEY = '@luminus_auth_token';
 const USER_DATA_KEY = '@luminus_user_data';
-
-export interface UserData {
-  uid: string;
-  email: string;
-  displayName?: string;
-  photoURL?: string;
-  emailVerified: boolean;
-}
-
-export interface AuthResponse {
-  success: boolean;
-  token?: string;
-  user?: UserData;
-  error?: string;
-}
 
 class AuthService {
   private token: string | null = null;
@@ -33,15 +19,11 @@ class AuthService {
         this.user = JSON.parse(userData);
       }
     } catch (error) {
-      console.error('Erro ao inicializar auth:', error);
     }
   }
 
   async login(email: string, password: string): Promise<AuthResponse> {
     try {
-      console.log('🔐 Tentando fazer login...', { email });
-      console.log('🔑 Firebase API Key:', FIREBASE_API_KEY ? 'Configurada' : 'FALTANDO!');
-      
       const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`, {
         method: 'POST',
         headers: {
@@ -89,9 +71,6 @@ class AuthService {
 
   async register(email: string, password: string, displayName?: string): Promise<AuthResponse> {
     try {
-      console.log('📝 Tentando registrar usuário...', { email, displayName });
-      console.log('🔑 Firebase API Key:', FIREBASE_API_KEY ? 'Configurada' : 'FALTANDO!');
-      
       const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`, {
         method: 'POST',
         headers: {
@@ -105,10 +84,8 @@ class AuthService {
       });
 
       const data = await response.json();
-      console.log('📡 Resposta do Firebase (registro):', { status: response.status, ok: response.ok });
 
       if (!response.ok) {
-        console.error('❌ Erro no registro:', data.error);
         return {
           success: false,
           error: this.getErrorMessage(data.error?.message),
@@ -116,7 +93,6 @@ class AuthService {
       }
 
       const token = data.idToken;
-      console.log('✅ Registro bem-sucedido! Token recebido.');
       
       const user: UserData = {
         uid: data.localId,
@@ -126,12 +102,10 @@ class AuthService {
       };
 
       if (displayName) {
-        console.log('📝 Atualizando perfil com nome:', displayName);
         await this.updateProfile(token, displayName);
       }
 
       await this.saveAuthData(token, user);
-      console.log('💾 Dados salvos no AsyncStorage');
 
       return {
         success: true,
@@ -139,7 +113,6 @@ class AuthService {
         user,
       };
     } catch (error: any) {
-      console.error('💥 Erro ao registrar:', error);
       return {
         success: false,
         error: error.message || 'Erro ao criar conta',
@@ -153,7 +126,6 @@ class AuthService {
       this.token = null;
       this.user = null;
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
     }
   }
 
@@ -174,15 +146,12 @@ class AuthService {
 
       return response.ok;
     } catch (error) {
-      console.error('Erro ao atualizar perfil:', error);
       return false;
     }
   }
 
   async sendVerificationEmail(token: string): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('📧 Enviando email de verificação...');
-      
       const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_API_KEY}`, {
         method: 'POST',
         headers: {
@@ -196,17 +165,14 @@ class AuthService {
 
       if (!response.ok) {
         const data = await response.json();
-        console.error('❌ Erro ao enviar email:', data.error);
         return {
           success: false,
           error: this.getErrorMessage(data.error?.message),
         };
       }
 
-      console.log('✅ Email de verificação enviado!');
       return { success: true };
     } catch (error: any) {
-      console.error('💥 Erro ao enviar email:', error);
       return {
         success: false,
         error: error.message || 'Erro ao enviar email de verificação',
@@ -267,7 +233,6 @@ class AuthService {
 
       return true;
     } catch (error) {
-      console.error('Erro ao renovar token:', error);
       return false;
     }
   }

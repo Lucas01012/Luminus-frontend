@@ -1,79 +1,10 @@
 import { apiService } from './apiService';
-
-export interface DocumentProcessingOptions {
-  incluirResumo?: boolean;
-  extrairEstrutura?: boolean;
-}
-
-export interface SearchDocumentOptions {
-  textoDocumento: string;
-  termoBusca: string;
-}
-
-export interface TTSOptions {
-  idioma?: string;
-  voz?: string;
-  genero?: 'MALE' | 'FEMALE';
-  velocidade?: number;
-  tom?: number;
-  adicionarPausas?: boolean;
-  enfatizarTitulos?: boolean;
-  velocidadeVariavel?: boolean;
-}
-
-// Tipos para a resposta do backend
-export interface DocumentStructure {
-  headings?: Array<{
-    text: string;
-    level: number;
-    page?: number;
-  }>;
-  paragraphs?: Array<{
-    text: string;
-    page?: number;
-    confidence?: number;
-  }>;
-  blocks?: Array<{
-    text: string;
-    confidence?: number;
-  }>;
-  words?: Array<{
-    text: string;
-    confidence: number;
-    bbox: {
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-    };
-  }>;
-  tables?: Array<{
-    data: string[][];
-    rows: number;
-    columns: number;
-  }>;
-  pages?: Array<{
-    page_number: number;
-    headings: any[];
-    paragraphs: any[];
-    images: any[];
-  }>;
-}
-
-export interface DocumentMetadata {
-  total_pages?: number;
-  title?: string;
-  author?: string;
-}
-
-export interface DocumentResponse {
-  text_content: string;
-  structure?: DocumentStructure;
-  metadata?: DocumentMetadata;
-  confidence?: number;
-  resumo?: string;
-  palavras_chave?: string[];
-}
+import {
+  DocumentProcessingOptions,
+  SearchDocumentOptions,
+  TTSOptions,
+  DocumentResponse,
+} from '@/src/models';
 
 class DocumentService {
   async processDocument(
@@ -119,14 +50,12 @@ class DocumentService {
       let errorMessage = 'Erro ao processar documento';
       
       if (error.response?.status === 404) {
-        errorMessage = '❌ Rota /ler-texto não encontrada no backend. Verifique se o servidor Flask está rodando e se a rota foi criada.';
+        errorMessage = 'Rota /ler-texto não encontrada no backend. Verifique se o servidor Flask está rodando e se a rota foi criada.';
       } else if (error.response?.data?.erro) {
         errorMessage = error.response.data.erro;
       } else if (error.message) {
         errorMessage = error.message;
       }
-
-      console.error('📄 Erro ao processar documento:', errorMessage);
 
       return {
         success: false,

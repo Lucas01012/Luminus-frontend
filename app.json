@@ -14,7 +14,10 @@
       "backgroundColor": "#1a1a1a"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Permitir ao Luminus usar Face ID para autenticação rápida e segura no aplicativo."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -50,13 +53,19 @@
         {
           "photosPermission": "Permitir ao Luminus acessar suas fotos para análise de imagens."
         }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Permitir ao Luminus usar Face ID para autenticação rápida e segura."
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "EXPO_PUBLIC_API_URL": "http://192.168.1.127:5000"
+      "EXPO_PUBLIC_API_URL": "http://192.168.0.183:5000"
     }
   }
 }

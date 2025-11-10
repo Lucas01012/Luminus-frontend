@@ -21,7 +21,7 @@ function getBaseURL(): string {
   }
 }
 
-const BASE_URL = getBaseURL();
+const BASE_URL = getBaseURL(); 
 
 class ApiService {
   private api: AxiosInstance;
@@ -51,8 +51,6 @@ class ApiService {
     this.api.interceptors.response.use(
       (response) => response,
       async (error) => {
-        console.error('API Error:', error.response?.data || error.message);
-        
         if (error.response?.status === 401) {
           await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
           await AsyncStorage.removeItem('@luminus_user_data');
@@ -68,7 +66,6 @@ class ApiService {
       await this.api.get('/', { timeout: 5000 });
       return true;
     } catch (error: any) {
-      console.error('Erro ao conectar com backend:', error.message);
       return false;
     }
   }
@@ -138,7 +135,6 @@ class ApiService {
       return response;
       
     } catch (error: any) {
-      console.error('Erro no upload:', error.message);
       throw error;
     }
   }

@@ -9,9 +9,11 @@ import {
   TextInput,
   Alert,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { useTheme } from '@/src/theme/ThemeProvider';
-import { historyService, HistoryItem } from '@/src/services/historyService';
+import { historyService } from '@/src/services/historyService';
+import { HistoryItem } from '@/src/models';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -21,15 +23,19 @@ export default function HistoryScreen() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const loadHistory = async () => {
     try {
+      setLoading(true);
       const data = searchQuery
         ? await historyService.searchHistory(searchQuery)
         : await historyService.getHistory();
       setHistory(data);
     } catch (error) {
-      console.error('Erro ao carregar histórico:', error);
+      Alert.alert('Erro', 'Não foi possível carregar o histórico');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -45,7 +51,7 @@ export default function HistoryScreen() {
     setRefreshing(false);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (item: HistoryItem) => {
     Alert.alert(
       'Confirmar exclusão',
       'Deseja realmente excluir este item do histórico?',
@@ -56,32 +62,10 @@ export default function HistoryScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await historyService.deleteItem(id);
+              await historyService.deleteItem(item.id, item.type);
               await loadHistory();
             } catch (error) {
               Alert.alert('Erro', 'Não foi possível excluir o item');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleClearAll = () => {
-    Alert.alert(
-      'Limpar histórico',
-      'Deseja realmente limpar todo o histórico?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Limpar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await historyService.clearHistory();
-              await loadHistory();
-            } catch (error) {
-              Alert.alert('Erro', 'Não foi possível limpar o histórico');
             }
           },
         },
@@ -117,9 +101,18 @@ export default function HistoryScreen() {
           accessibilityLabel={`${item.title}, ${formatDate(item.timestamp)}, toque para ${isExpanded ? 'recolher' : 'expandir'}`}
         >
           <View style={styles.itemHeaderContent}>
-            <View style={[styles.typeIcon, { backgroundColor: typeColor }]}>
-              <FontAwesome name={typeIcon} size={20} color="#FFFFFF" />
-            </View>
+            {/* Miniatura da imagem (se disponível) ou ícone do tipo */}
+            {!isExpanded && item.type === 'image' && item.imageUri ? (
+              <Image
+                source={{ uri: item.imageUri }}
+                style={[styles.thumbnailImage, { borderColor: theme.colors.outline }]}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.typeIcon, { backgroundColor: typeColor }]}>
+                <FontAwesome name={typeIcon} size={20} color="#FFFFFF" />
+              </View>
+            )}
             <View style={styles.itemInfo}>
               <Text style={[styles.itemTitle, { color: theme.colors.text }]} numberOfLines={2}>
                 {item.title}
@@ -137,6 +130,11 @@ export default function HistoryScreen() {
                   {item.metadata.confidence && (
                     <Text style={[styles.metadataText, { color: theme.colors.textSecondary }]}>
                       {(item.metadata.confidence * 100).toFixed(0)}% confiança
+                    </Text>
+                  )}
+                  {item.metadata.processingTime && (
+                    <Text style={[styles.metadataText, { color: theme.colors.textSecondary }]}>
+                      ⚡ {item.metadata.processingTime.toFixed(1)}s
                     </Text>
                   )}
                 </View>
@@ -182,7 +180,7 @@ export default function HistoryScreen() {
             )}
             <TouchableOpacity
               style={[styles.deleteButton, { backgroundColor: theme.colors.error }]}
-              onPress={() => handleDelete(item.id)}
+              onPress={() => handleDelete(item)}
               accessibilityLabel="Excluir item do histórico"
             >
               <FontAwesome name="trash" size={18} color="#FFFFFF" />
@@ -227,19 +225,6 @@ export default function HistoryScreen() {
             </TouchableOpacity>
           )}
         </View>
-
-        {history.length > 0 && (
-          <TouchableOpacity
-            style={[styles.clearButton, { backgroundColor: theme.colors.error + '20', borderColor: theme.colors.error }]}
-            onPress={handleClearAll}
-            accessibilityLabel="Limpar todo o histórico"
-          >
-            <FontAwesome name="trash-o" size={18} color={theme.colors.error} />
-            <Text style={[styles.clearButtonText, { color: theme.colors.error }]}>
-              Limpar histórico
-            </Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       <ScrollView
@@ -254,7 +239,14 @@ export default function HistoryScreen() {
           />
         }
       >
-        {history.length === 0 ? (
+        {loading ? (
+          <View style={styles.emptyContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={[styles.emptyText, { color: theme.colors.textSecondary, marginTop: 16 }]}>
+              Carregando histórico...
+            </Text>
+          </View>
+        ) : history.length === 0 ? (
           <View style={styles.emptyContainer}>
             <View style={[styles.emptyIcon, { backgroundColor: theme.colors.surface }]}>
               <FontAwesome name="inbox" size={64} color={theme.colors.textDisabled} />
@@ -328,20 +320,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     padding: 0,
   },
-  clearButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  clearButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
   scrollView: {
     flex: 1,
   },
@@ -368,6 +346,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+  },
+  thumbnailImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    marginRight: 12,
+    borderWidth: 1,
   },
   itemInfo: {
     flex: 1,

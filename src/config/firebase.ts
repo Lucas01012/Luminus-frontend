@@ -1,5 +1,3 @@
-
-
 export const FIREBASE_CONFIG = {
   apiKey: 'AIzaSyAMBGzFbCLayN-xSFHWA24xDZBNsoXuZ3M',
   authDomain: 'luminus-2d0bd.firebaseapp.com',
