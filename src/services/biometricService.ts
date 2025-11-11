@@ -66,7 +66,8 @@ class BiometricService {
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage: promptMessage || 'Autentique-se para continuar',
         cancelLabel: 'Cancelar',
-        disableDeviceFallback: false, // Permite fallback para senha do dispositivo
+        disableDeviceFallback: true, // Força apenas biometria, SEM senha do dispositivo
+        fallbackLabel: '', // Remove o botão de fallback
       });
 
       if (result.success) {

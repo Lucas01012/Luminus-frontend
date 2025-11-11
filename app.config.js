@@ -1,0 +1,77 @@
+export default {
+  expo: {
+    name: "Luminus-frontend",
+    slug: "Luminus-frontend",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/images/icon.png",
+    scheme: "luminusfrontend",
+    userInterfaceStyle: "automatic",
+    newArchEnabled: true,
+    splash: {
+      image: "./assets/images/splash-icon.png",
+      resizeMode: "contain",
+      backgroundColor: "#1a1a1a"
+    },
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: "com.lucasconectacargo.luminusfrontend",
+      infoPlist: {
+        NSFaceIDUsageDescription: "Permitir ao Luminus usar Face ID para autenticação rápida e segura no aplicativo.",
+        NSCameraUsageDescription: "Permitir ao Luminus acessar sua câmera para capturar imagens e análise visual.",
+        NSPhotoLibraryUsageDescription: "Permitir ao Luminus acessar suas fotos para análise de imagens.",
+        NSMicrophoneUsageDescription: "Permitir ao Luminus acessar o microfone para recursos de áudio."
+      }
+    },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: "./assets/images/adaptive-icon.png",
+        backgroundColor: "#ffffff"
+      },
+      edgeToEdgeEnabled: true,
+      predictiveBackGestureEnabled: false,
+      permissions: [
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ],
+      package: "com.lucasconectacargo.Luminusfrontend"
+    },
+    web: {
+      bundler: "metro",
+      output: "static",
+      favicon: "./assets/images/favicon.png"
+    },
+    plugins: [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          cameraPermission: "Permitir ao Luminus acessar sua câmera para capturar imagens e análise visual.",
+          microphonePermission: "Permitir ao Luminus acessar o microfone para recursos de áudio."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          photosPermission: "Permitir ao Luminus acessar suas fotos para análise de imagens."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          faceIDPermission: "Permitir ao Luminus usar Face ID para autenticação rápida e segura."
+        }
+      ]
+    ],
+    experiments: {
+      typedRoutes: true
+    },
+    extra: {
+      EXPO_PUBLIC_API_URL: "http://192.168.0.183:5000"
+    }
+  }
+};
