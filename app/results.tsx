@@ -15,11 +15,13 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { useTheme } from '@/src/theme/ThemeProvider';
 import { Button, Card } from '@/src/components/ui';
+import { SpeechButton } from '@/src/components/SpeechButton';
 import { useFeedback, FeedbackType } from '@/src/hooks/useFeedback';
 import { useLoading } from '@/src/hooks/useLoading';
 import apiService from '@/src/services/apiService';
 import documentService from '@/src/services/documentService';
 import historyService from '@/src/services/historyService';
+import CrowIcon from '@/components/CrowIcon';
 
 export default function ResultsScreen() {
   const { theme } = useTheme();
@@ -378,10 +380,14 @@ export default function ResultsScreen() {
         {result.type === 'image' && result.analysis?.objeto && (
           <Card variant="outlined" style={styles.resultCard}>
             <View style={styles.cardHeader}>
-              <FontAwesome name="eye" size={20} color={theme.colors.primary} />
+              <CrowIcon size={20} />
               <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
                 Análise Visual
               </Text>
+              <SpeechButton 
+                text={result.analysis.objeto} 
+                size={24}
+              />
             </View>
             <Text 
               style={[styles.analysisText, { color: theme.colors.text }]}
@@ -389,13 +395,6 @@ export default function ResultsScreen() {
             >
               {result.analysis.objeto}
             </Text>
-            <Button
-              title="🔊 Ouvir Descrição"
-              variant="outline"
-              onPress={() => generateAudio(result.analysis.objeto)}
-              style={styles.audioButton}
-              accessibilityLabel="Gerar áudio da descrição"
-            />
           </Card>
         )}
 
@@ -407,6 +406,10 @@ export default function ResultsScreen() {
               <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
                 Texto Extraído
               </Text>
+              <SpeechButton 
+                text={result.text} 
+                size={24}
+              />
             </View>
             <Text 
               style={[styles.extractedText, { color: theme.colors.text }]}
@@ -414,13 +417,6 @@ export default function ResultsScreen() {
             >
               {result.text}
             </Text>
-            <Button
-              title="🔊 Ouvir Texto"
-              variant="outline"
-              onPress={() => generateAudio(result.text)}
-              style={styles.audioButton}
-              accessibilityLabel="Gerar áudio do texto"
-            />
           </Card>
         )}
 
@@ -476,6 +472,10 @@ export default function ResultsScreen() {
                   <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
                     📝 Resumo Inteligente
                   </Text>
+                  <SpeechButton 
+                    text={result.data.resumo} 
+                    size={24}
+                  />
                 </View>
                 <Text style={[styles.summaryText, { color: theme.colors.text }]}>
                   {result.data.resumo}
@@ -501,14 +501,6 @@ export default function ResultsScreen() {
                     </View>
                   </View>
                 )}
-                
-                <Button
-                  title="🔊 Ouvir Resumo"
-                  variant="outline"
-                  size="large"
-                  onPress={() => generateAudio(result.data.resumo)}
-                  style={styles.audioButton}
-                />
               </Card>
             )}
 
@@ -548,6 +540,10 @@ export default function ResultsScreen() {
                   <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
                     📖 Texto Completo
                   </Text>
+                  <SpeechButton 
+                    text={result.data.text_content} 
+                    size={24}
+                  />
                 </View>
                 <ScrollView 
                   style={styles.textContainer}
@@ -558,13 +554,6 @@ export default function ResultsScreen() {
                     {result.data.text_content}
                   </Text>
                 </ScrollView>
-                <Button
-                  title="🔊 Ouvir Documento"
-                  variant="outline"
-                  size="large"
-                  onPress={() => generateAudio(result.data.text_content)}
-                  style={styles.audioButton}
-                />
               </Card>
             )}
           </>
@@ -640,8 +629,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   resultImage: {
-    width: '100%',
-    height: 300,
+    width: 'auto',
+    height: 'auto',
   },
   resultCard: {
     marginBottom: 16,
@@ -650,11 +639,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+    gap: 8,
   },
   cardTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    marginLeft: 8,
+    flex: 1,
   },
   analysisText: {
     fontSize: 19,

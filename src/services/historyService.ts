@@ -29,20 +29,16 @@ class HistoryService {
         userId: user.uid,
       };
 
-      // Buscar histórico existente
       const storageKey = this.getStorageKey(user.uid);
       const existingData = await AsyncStorage.getItem(storageKey);
       const history: HistoryItem[] = existingData ? JSON.parse(existingData) : [];
 
-      // Adicionar novo item no início
       history.unshift(newItem);
 
-      // Limitar número de itens
       if (history.length > MAX_HISTORY_ITEMS) {
         history.splice(MAX_HISTORY_ITEMS);
       }
 
-      // Salvar de volta
       await AsyncStorage.setItem(storageKey, JSON.stringify(history));
       
       return { success: true };

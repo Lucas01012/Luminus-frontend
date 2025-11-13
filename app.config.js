@@ -17,7 +17,6 @@ export default {
       supportsTablet: true,
       bundleIdentifier: "com.lucasconectacargo.luminusfrontend",
       infoPlist: {
-        NSFaceIDUsageDescription: "Permitir ao Luminus usar Face ID para autenticação rápida e segura no aplicativo.",
         NSCameraUsageDescription: "Permitir ao Luminus acessar sua câmera para capturar imagens e análise visual.",
         NSPhotoLibraryUsageDescription: "Permitir ao Luminus acessar suas fotos para análise de imagens.",
         NSMicrophoneUsageDescription: "Permitir ao Luminus acessar o microfone para recursos de áudio."
@@ -34,9 +33,7 @@ export default {
         "CAMERA",
         "READ_MEDIA_IMAGES",
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "USE_BIOMETRIC",
-        "USE_FINGERPRINT"
+        "WRITE_EXTERNAL_STORAGE"
       ],
       package: "com.lucasconectacargo.Luminusfrontend"
     },
@@ -59,19 +56,13 @@ export default {
         {
           photosPermission: "Permitir ao Luminus acessar suas fotos para análise de imagens."
         }
-      ],
-      [
-        "expo-local-authentication",
-        {
-          faceIDPermission: "Permitir ao Luminus usar Face ID para autenticação rápida e segura."
-        }
       ]
     ],
     experiments: {
       typedRoutes: true
     },
     extra: {
-      EXPO_PUBLIC_API_URL: "http://192.168.0.183:5000"
+      EXPO_PUBLIC_API_URL: "http://10.0.2.2:5000"
     }
   }
 };

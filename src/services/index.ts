@@ -4,4 +4,4 @@ export { default as historyService } from './historyService';
 export { default as authService } from './authService';
 export { default as firebaseHistoryService } from './firebaseHistoryService';
 export { default as preferencesService } from './preferencesService';
-export { default as biometricService } from './biometricService';
+export { default as speechService } from './speechService';

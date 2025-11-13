@@ -9,9 +9,9 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/logotipo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1a1a1a"
+      "backgroundColor": "#E8DCC8"
     },
     "ios": {
       "supportsTablet": true,
@@ -65,7 +65,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "EXPO_PUBLIC_API_URL": "http://192.168.0.183:5000"
+      "EXPO_PUBLIC_API_URL": "http://10.0.2.2:5000"
     }
   }
 }

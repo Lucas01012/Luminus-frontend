@@ -14,6 +14,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useTheme } from '@/src/theme/ThemeProvider';
 import { Button, Card } from '@/src/components/ui';
 import { useFeedback, FeedbackType } from '@/src/hooks/useFeedback';
+import CrowIcon from '@/components/CrowIcon';
 
 const { width } = Dimensions.get('window');
 
@@ -94,11 +95,8 @@ export default function HomeScreen() {
       {/* Header com logo e saudação */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <FontAwesome 
-            name="eye" 
-            size={48} 
-            color={theme.colors.primary}
-            accessibilityLabel="Logo do Luminus - Olho"
+          <CrowIcon 
+            size={64}
           />
           <Text 
             style={[styles.appName, { color: theme.colors.text }]}

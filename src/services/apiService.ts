@@ -6,19 +6,27 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const AUTH_TOKEN_KEY = '@luminus_auth_token';
 
 function getBaseURL(): string {
+  // Prioridade 1: Variável de ambiente
   const configURL = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL;
   
-  if (configURL && configURL !== 'http://192.168.0.100:5000') {
+  if (configURL) {
+    console.log('🌐 API URL (from config):', configURL);
     return configURL;
   }
   
+  // Prioridade 2: URLs padrão por plataforma
+  let defaultURL = 'http://localhost:5000';
+  
   if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:5000';
+    // Para emulador Android: 10.0.2.2 = localhost da máquina host
+    defaultURL = 'http://10.0.2.2:5000';
   } else if (Platform.OS === 'ios') {
-    return 'http://localhost:5000';
-  } else {
-    return 'http://localhost:5000';
+    // Para simulador iOS: localhost funciona
+    defaultURL = 'http://localhost:5000';
   }
+  
+  console.log('🌐 API URL (default):', defaultURL);
+  return defaultURL;
 }
 
 const BASE_URL = getBaseURL(); 
@@ -27,6 +35,10 @@ class ApiService {
   private api: AxiosInstance;
 
   constructor() {
+    console.log('🚀 Inicializando ApiService...');
+    console.log('📱 Platform:', Platform.OS);
+    console.log('🌐 Base URL:', BASE_URL);
+    
     this.api = axios.create({
       baseURL: BASE_URL,
       timeout: 30000,
@@ -37,6 +49,7 @@ class ApiService {
 
     this.api.interceptors.request.use(
       async (config) => {
+        console.log('📤 Request:', config.method?.toUpperCase(), config.url);
         const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
@@ -44,13 +57,31 @@ class ApiService {
         return config;
       },
       (error) => {
+        console.error('❌ Request Error:', error.message);
         return Promise.reject(error);
       }
     );
 
     this.api.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        console.log('✅ Response:', response.status, response.config.url);
+        return response;
+      },
       async (error) => {
+        if (error.code === 'ECONNABORTED') {
+          console.error('⏱️ Timeout Error:', error.config?.url);
+        } else if (error.code === 'ERR_NETWORK') {
+          console.error('🌐 Network Error - Backend não acessível:', BASE_URL);
+          console.error('💡 Verifique se:');
+          console.error('   1. O backend Flask está rodando');
+          console.error('   2. O IP está correto para seu dispositivo/emulador');
+          console.error('   3. O firewall não está bloqueando a conexão');
+        } else if (error.response) {
+          console.error('❌ Response Error:', error.response.status, error.config?.url);
+        } else {
+          console.error('❌ Unknown Error:', error.message);
+        }
+        
         if (error.response?.status === 401) {
           await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
           await AsyncStorage.removeItem('@luminus_user_data');
@@ -61,13 +92,40 @@ class ApiService {
     );
   }
 
-  async testConnection(): Promise<boolean> {
+  async testConnection(): Promise<{ success: boolean; message?: string; url?: string }> {
     try {
+      console.log('🔍 Testando conexão com:', BASE_URL);
+      const startTime = Date.now();
       await this.api.get('/', { timeout: 5000 });
-      return true;
+      const duration = Date.now() - startTime;
+      console.log(`✅ Conexão OK! (${duration}ms)`);
+      return { 
+        success: true, 
+        message: `Conectado em ${duration}ms`,
+        url: BASE_URL 
+      };
     } catch (error: any) {
-      return false;
+      console.error('❌ Falha na conexão:', error.message);
+      let errorMessage = 'Erro ao conectar com o backend';
+      
+      if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Timeout - Backend não respondeu em 5s';
+      } else if (error.code === 'ERR_NETWORK') {
+        errorMessage = 'Backend não acessível. Verifique se está rodando.';
+      } else if (error.response) {
+        errorMessage = `Backend retornou erro ${error.response.status}`;
+      }
+      
+      return { 
+        success: false, 
+        message: errorMessage,
+        url: BASE_URL 
+      };
     }
+  }
+
+  getBaseURL(): string {
+    return BASE_URL;
   }
 
   async getUserProfile(): Promise<{ success: boolean; data?: any; error?: string }> {

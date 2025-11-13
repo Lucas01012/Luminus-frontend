@@ -49,7 +49,7 @@ class AuthService {
       const user: UserData = {
         uid: data.localId,
         email: data.email,
-        displayName: data.displayName,
+        displayName: data.displayName || email.split('@')[0],
         photoURL: data.photoUrl,
         emailVerified: data.emailVerified || false,
       };

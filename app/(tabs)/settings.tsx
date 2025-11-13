@@ -18,7 +18,6 @@ import { useFeedback, FeedbackType } from '@/src/hooks';
 import { useAppSettingsContext } from '@/src/contexts/AppSettingsContext';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { router } from 'expo-router';
-import biometricService from '@/src/services/biometricService';
 
 export default function SettingsScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
@@ -32,70 +31,6 @@ export default function SettingsScreen() {
   } = useFeedback();
   
   const { settings, updateSetting, resetSettings: resetAppSettings } = useAppSettingsContext();
-
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [biometricType, setBiometricType] = useState<string>('biometria');
-
-  useEffect(() => {
-    checkBiometricAvailability();
-  }, []);
-
-  const checkBiometricAvailability = async () => {
-    const available = await biometricService.isAvailable();
-    setBiometricAvailable(available);
-    
-    if (available) {
-      const enabled = await biometricService.isBiometricEnabled();
-      setBiometricEnabled(enabled);
-      
-      const type = await biometricService.getBiometricTypeMessage();
-      setBiometricType(type);
-    }
-  };
-
-  const handleBiometricToggle = async () => {
-    await triggerFeedback(FeedbackType.LIGHT);
-
-    if (!biometricEnabled) {
-      // Ativar: primeiro autentica para confirmar
-      const result = await biometricService.authenticate(
-        `Use sua ${biometricType} para ativar`
-      );
-
-      if (result.success) {
-        await biometricService.setBiometricEnabled(true);
-        setBiometricEnabled(true);
-        await triggerFeedback(FeedbackType.SUCCESS);
-        Alert.alert(
-          '✅ Ativado!',
-          `${biometricType} ativado com sucesso. Agora você pode usar para fazer login.`
-        );
-      } else {
-        await triggerFeedback(FeedbackType.ERROR);
-        Alert.alert('❌ Erro', result.error || 'Não foi possível ativar');
-      }
-    } else {
-      // Desativar: confirma com o usuário
-      Alert.alert(
-        'Desativar biometria?',
-        `Você precisará fazer login com email e senha da próxima vez.`,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Desativar',
-            style: 'destructive',
-            onPress: async () => {
-              await biometricService.setBiometricEnabled(false);
-              setBiometricEnabled(false);
-              await triggerFeedback(FeedbackType.MEDIUM);
-              Alert.alert('✅ Desativado', 'Biometria desativada');
-            },
-          },
-        ]
-      );
-    }
-  };
 
   const handleSettingChange = async (
     setter: (value: boolean) => void,
@@ -151,19 +86,6 @@ export default function SettingsScreen() {
   };
 
   const settingSections = [
-    {
-      title: 'Segurança',
-      settings: biometricAvailable ? [
-        {
-          key: 'biometric',
-          title: biometricType,
-          description: `Usar ${biometricType} para entrar no app`,
-          value: biometricEnabled,
-          onToggle: handleBiometricToggle,
-          icon: 'unlock-alt',
-        },
-      ] : [],
-    },
     {
       title: 'Aparência',
       settings: [
@@ -238,8 +160,6 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             await triggerFeedback(FeedbackType.MEDIUM);
-            // Limpa a sessão biométrica antes do logout
-            await biometricService.clearBiometricSession();
             await logout();
             Alert.alert('✅ Sucesso', 'Você saiu da sua conta');
           },

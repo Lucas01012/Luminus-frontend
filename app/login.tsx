@@ -15,6 +15,7 @@ import { useTheme } from '@/src/theme/ThemeProvider';
 import { Input, Button } from '@/src/components/ui';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useFeedback, FeedbackType } from '@/src/hooks/useFeedback';
+import CrowIcon from '@/components/CrowIcon';
 
 export default function LoginScreen() {
   const { theme } = useTheme();
@@ -132,9 +133,7 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <View style={[styles.logoContainer, { backgroundColor: theme.colors.primary }]}>
-            <FontAwesome name="eye" size={48} color="#FFFFFF" />
-          </View>
+          <CrowIcon size={80} />
           <Text style={[styles.title, { color: theme.colors.text }]}>
             {isLogin ? 'Bem-vindo de volta!' : 'Criar conta'}
           </Text>
