@@ -19,7 +19,6 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
   const scale = useSharedValue(0.8);
 
   useEffect(() => {
-    // Animação de fade in e scale
     opacity.value = withTiming(1, {
       duration: 800,
       easing: Easing.out(Easing.cubic),
@@ -84,7 +83,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '85%',
-    aspectRatio: 1, // Mantém proporção quadrada
+    aspectRatio: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
