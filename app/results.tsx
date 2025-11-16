@@ -257,6 +257,9 @@ export default function ResultsScreen() {
       await triggerFeedback(FeedbackType.LIGHT);
       
       let message = '';
+      const shareOptions: any = {
+        title: 'Resultado do Luminus',
+      };
       
       if (result?.type === 'image') {
         message = `Análise do Luminus:\n\n`;
@@ -266,20 +269,26 @@ export default function ResultsScreen() {
         if (result.text) {
           message += `Texto extraído: ${result.text}\n\n`;
         }
+        message += `Gerado pelo Luminus - Assistente Visual Inteligente`;
+        
+        // Adiciona a imagem ao compartilhamento
+        if (result.imageUri) {
+          shareOptions.url = result.imageUri;
+          shareOptions.message = message;
+        } else {
+          shareOptions.message = message;
+        }
       } else if (result?.type === 'document') {
         message = `Documento processado pelo Luminus:\n\n`;
         message += `Título: ${result.title}\n`;
         if (result.data.resumo?.resumo) {
           message += `Resumo: ${result.data.resumo.resumo}\n\n`;
         }
+        message += `Gerado pelo Luminus - Assistente Visual Inteligente`;
+        shareOptions.message = message;
       }
 
-      message += `Gerado pelo Luminus - Assistente Visual Inteligente`;
-
-      await Share.share({
-        message,
-        title: 'Resultado do Luminus',
-      });
+      await Share.share(shareOptions);
     } catch (error) {
       console.error('Erro ao compartilhar:', error);
     }
@@ -629,8 +638,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   resultImage: {
-    width: 'auto',
-    height: 'auto',
+    width: '100%',
+    height: 300,
+    borderRadius: 12,
   },
   resultCard: {
     marginBottom: 16,

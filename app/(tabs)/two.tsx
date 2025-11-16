@@ -10,12 +10,14 @@ import {
   Alert,
   RefreshControl,
   ActivityIndicator,
+  Share,
 } from 'react-native';
 import { useTheme } from '@/src/theme/ThemeProvider';
 import { historyService } from '@/src/services/historyService';
 import { HistoryItem } from '@/src/models';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSpeech } from '@/src/hooks/useSpeech';
 
 export default function HistoryScreen() {
   const { theme } = useTheme();
@@ -24,6 +26,10 @@ export default function HistoryScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<'documents' | 'images' | null>(null);
+  const [speakingItemId, setSpeakingItemId] = useState<string | null>(null);
+  
+  const { speak, stop, isSpeaking } = useSpeech({ autoStop: true });
 
   const loadHistory = async () => {
     try {
@@ -49,6 +55,60 @@ export default function HistoryScreen() {
     setRefreshing(true);
     await loadHistory();
     setRefreshing(false);
+  };
+
+  const handleSpeak = async (item: HistoryItem) => {
+    if (isSpeaking && speakingItemId === item.id) {
+      // Se já está falando este item, para
+      await stop();
+      setSpeakingItemId(null);
+    } else {
+      // Para qualquer fala anterior e inicia nova
+      await stop();
+      setSpeakingItemId(item.id);
+      
+      // Monta o texto para falar
+      const textToSpeak = `${item.title}. ${item.content}`;
+      
+      try {
+        await speak(textToSpeak);
+      } catch (error) {
+        console.error('Erro ao falar:', error);
+      } finally {
+        setSpeakingItemId(null);
+      }
+    }
+  };
+
+  const handleShare = async (item: HistoryItem) => {
+    try {
+      const shareOptions: any = {
+        title: `Luminus - ${item.title}`,
+      };
+
+      let message = `📱 Luminus - Assistente Visual Inteligente\n\n`;
+      message += `📌 ${item.title}\n\n`;
+      message += `${item.content}\n\n`;
+      
+      if (item.metadata?.keywords && item.metadata.keywords.length > 0) {
+        message += `🔑 Palavras-chave: ${item.metadata.keywords.join(', ')}\n\n`;
+      }
+      
+      message += `📅 ${formatDate(item.timestamp)}`;
+
+      // Se for uma imagem, inclui a URI para compartilhamento
+      if (item.type === 'image' && item.imageUri) {
+        shareOptions.url = item.imageUri;
+        shareOptions.message = message;
+      } else {
+        shareOptions.message = message;
+      }
+
+      await Share.share(shareOptions);
+    } catch (error) {
+      console.error('Erro ao compartilhar:', error);
+      Alert.alert('Erro', 'Não foi possível compartilhar o item.');
+    }
   };
 
   const handleDelete = (item: HistoryItem) => {
@@ -90,6 +150,7 @@ export default function HistoryScreen() {
 
   const renderHistoryItem = (item: HistoryItem) => {
     const isExpanded = expandedId === item.id;
+    const isThisItemSpeaking = isSpeaking && speakingItemId === item.id;
     const typeIcon = item.type === 'image' ? 'image' : 'file-text';
     const typeColor = item.type === 'image' ? theme.colors.info : theme.colors.secondary;
 
@@ -178,19 +239,65 @@ export default function HistoryScreen() {
                 </View>
               </View>
             )}
-            <TouchableOpacity
-              style={[styles.deleteButton, { backgroundColor: theme.colors.error }]}
-              onPress={() => handleDelete(item)}
-              accessibilityLabel="Excluir item do histórico"
-            >
-              <FontAwesome name="trash" size={18} color="#FFFFFF" />
-              <Text style={styles.deleteButtonText}>Excluir</Text>
-            </TouchableOpacity>
+            
+            {/* Botões de ação */}
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.speakButton, { 
+                  backgroundColor: isThisItemSpeaking ? theme.colors.warning : theme.colors.primary 
+                }]}
+                onPress={() => handleSpeak(item)}
+                accessibilityLabel={isThisItemSpeaking ? "Parar leitura" : "Ler em voz alta"}
+              >
+                <FontAwesome 
+                  name={isThisItemSpeaking ? "stop" : "volume-up"} 
+                  size={18} 
+                  color="#FFFFFF" 
+                />
+                <Text style={styles.actionButtonText}>
+                  {isThisItemSpeaking ? "Parar" : "Ouvir"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: theme.colors.success }]}
+                onPress={() => handleShare(item)}
+                accessibilityLabel="Compartilhar item"
+              >
+                <FontAwesome name="share-alt" size={18} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>Compartilhar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButton, styles.deleteButton, { backgroundColor: theme.colors.error }]}
+                onPress={() => handleDelete(item)}
+                accessibilityLabel="Excluir item do histórico"
+              >
+                <FontAwesome name="trash" size={18} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>Excluir</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </View>
     );
   };
+
+  // Filtra histórico por categoria e busca
+  const filteredHistory = history.filter(item => {
+    const matchesSearch = !searchQuery || 
+      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.content.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCategory = !activeCategory || 
+      (activeCategory === 'documents' && item.type === 'document') ||
+      (activeCategory === 'images' && item.type === 'image');
+    
+    return matchesSearch && matchesCategory;
+  });
+
+  const documentsCount = history.filter(item => item.type === 'document').length;
+  const imagesCount = history.filter(item => item.type === 'image').length;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -225,6 +332,101 @@ export default function HistoryScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* Cards de Categoria */}
+        <View style={styles.categoryContainer}>
+          <TouchableOpacity
+            style={[
+              styles.categoryCard,
+              { 
+                backgroundColor: activeCategory === 'documents' ? theme.colors.secondary : theme.colors.surface,
+                borderColor: activeCategory === 'documents' ? theme.colors.secondary : theme.colors.outline
+              }
+            ]}
+            onPress={() => setActiveCategory(activeCategory === 'documents' ? null : 'documents')}
+            accessibilityLabel={`Filtrar por documentos, ${documentsCount} itens`}
+          >
+            <View style={[
+              styles.categoryIconContainer,
+              { backgroundColor: activeCategory === 'documents' ? '#FFFFFF' : theme.colors.secondary }
+            ]}>
+              <FontAwesome 
+                name="file-text" 
+                size={24} 
+                color={activeCategory === 'documents' ? theme.colors.secondary : '#FFFFFF'} 
+              />
+            </View>
+            <View style={styles.categoryInfo}>
+              <Text style={[
+                styles.categoryTitle,
+                { color: activeCategory === 'documents' ? '#FFFFFF' : theme.colors.text }
+              ]}>
+                Documentos
+              </Text>
+              <Text style={[
+                styles.categoryCount,
+                { color: activeCategory === 'documents' ? '#FFFFFF' : theme.colors.textSecondary }
+              ]}>
+                {documentsCount} {documentsCount === 1 ? 'item' : 'itens'}
+              </Text>
+            </View>
+            {activeCategory === 'documents' && (
+              <FontAwesome name="check-circle" size={20} color="#FFFFFF" />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.categoryCard,
+              { 
+                backgroundColor: activeCategory === 'images' ? theme.colors.info : theme.colors.surface,
+                borderColor: activeCategory === 'images' ? theme.colors.info : theme.colors.outline
+              }
+            ]}
+            onPress={() => setActiveCategory(activeCategory === 'images' ? null : 'images')}
+            accessibilityLabel={`Filtrar por imagens, ${imagesCount} itens`}
+          >
+            <View style={[
+              styles.categoryIconContainer,
+              { backgroundColor: activeCategory === 'images' ? '#FFFFFF' : theme.colors.info }
+            ]}>
+              <FontAwesome 
+                name="image" 
+                size={24} 
+                color={activeCategory === 'images' ? theme.colors.info : '#FFFFFF'} 
+              />
+            </View>
+            <View style={styles.categoryInfo}>
+              <Text style={[
+                styles.categoryTitle,
+                { color: activeCategory === 'images' ? '#FFFFFF' : theme.colors.text }
+              ]}>
+                Imagens
+              </Text>
+              <Text style={[
+                styles.categoryCount,
+                { color: activeCategory === 'images' ? '#FFFFFF' : theme.colors.textSecondary }
+              ]}>
+                {imagesCount} {imagesCount === 1 ? 'item' : 'itens'}
+              </Text>
+            </View>
+            {activeCategory === 'images' && (
+              <FontAwesome name="check-circle" size={20} color="#FFFFFF" />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {activeCategory && (
+          <TouchableOpacity
+            style={[styles.clearFilterButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}
+            onPress={() => setActiveCategory(null)}
+          >
+            <FontAwesome name="times" size={16} color={theme.colors.textSecondary} />
+            <Text style={[styles.clearFilterText, { color: theme.colors.textSecondary }]}>
+              Limpar filtro
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView
@@ -246,22 +448,22 @@ export default function HistoryScreen() {
               Carregando histórico...
             </Text>
           </View>
-        ) : history.length === 0 ? (
+        ) : filteredHistory.length === 0 ? (
           <View style={styles.emptyContainer}>
             <View style={[styles.emptyIcon, { backgroundColor: theme.colors.surface }]}>
               <FontAwesome name="inbox" size={64} color={theme.colors.textDisabled} />
             </View>
             <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
-              {searchQuery ? 'Nenhum resultado' : 'Histórico vazio'}
+              {searchQuery || activeCategory ? 'Nenhum resultado' : 'Histórico vazio'}
             </Text>
             <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-              {searchQuery
-                ? 'Não encontramos itens que correspondam à sua busca'
+              {searchQuery || activeCategory
+                ? 'Não encontramos itens que correspondam aos filtros'
                 : 'Suas análises de imagens e documentos aparecerão aqui'}
             </Text>
           </View>
         ) : (
-          history.map(renderHistoryItem)
+          filteredHistory.map(renderHistoryItem)
         )}
       </ScrollView>
     </View>
@@ -319,6 +521,53 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 17,
     padding: 0,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  categoryCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 2,
+    gap: 12,
+  },
+  categoryIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryInfo: {
+    flex: 1,
+  },
+  categoryTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  categoryCount: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  clearFilterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+  },
+  clearFilterText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
@@ -415,18 +664,29 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
   },
-  deleteButton: {
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
     borderRadius: 12,
+    gap: 8,
   },
-  deleteButtonText: {
+  speakButton: {
+    // Cor definida dinamicamente
+  },
+  deleteButton: {
+    // Cor definida dinamicamente
+  },
+  actionButtonText: {
     color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '600',
-    marginLeft: 8,
   },
   emptyContainer: {
     alignItems: 'center',
