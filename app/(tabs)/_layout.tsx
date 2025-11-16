@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 
 import { useTheme } from '@/src/theme/ThemeProvider';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import { useFeedback, FeedbackType } from '@/src/hooks';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
@@ -15,6 +16,11 @@ function TabBarIcon(props: {
 
 export default function TabLayout() {
   const { theme } = useTheme();
+  const { triggerFeedback } = useFeedback();
+
+  const handleTabPress = async () => {
+    await triggerFeedback(FeedbackType.LIGHT);
+  };
 
   return (
     <Tabs
@@ -58,6 +64,9 @@ export default function TabLayout() {
           ),
           tabBarAccessibilityLabel: 'Tela inicial do Luminus',
         }}
+        listeners={{
+          tabPress: handleTabPress,
+        }}
       />
       
       <Tabs.Screen
@@ -71,6 +80,9 @@ export default function TabLayout() {
             />
           ),
           tabBarAccessibilityLabel: 'Abrir câmera para capturar e analisar imagens',
+        }}
+        listeners={{
+          tabPress: handleTabPress,
         }}
       />
       
@@ -86,6 +98,9 @@ export default function TabLayout() {
           ),
           tabBarAccessibilityLabel: 'Selecionar imagens da galeria',
         }}
+        listeners={{
+          tabPress: handleTabPress,
+        }}
       />
       
       <Tabs.Screen
@@ -99,6 +114,9 @@ export default function TabLayout() {
             />
           ),
           tabBarAccessibilityLabel: 'Processar documentos PDF e DOCX',
+        }}
+        listeners={{
+          tabPress: handleTabPress,
         }}
       />
       
@@ -114,6 +132,9 @@ export default function TabLayout() {
           ),
           tabBarAccessibilityLabel: 'Histórico de análises e documentos',
         }}
+        listeners={{
+          tabPress: handleTabPress,
+        }}
       />
       
       <Tabs.Screen
@@ -127,6 +148,9 @@ export default function TabLayout() {
             />
           ),
           tabBarAccessibilityLabel: 'Configurações do aplicativo',
+        }}
+        listeners={{
+          tabPress: handleTabPress,
         }}
       />
     </Tabs>

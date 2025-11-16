@@ -4,12 +4,16 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { ThemeProvider } from '@/src/theme/ThemeProvider';
 import { AppSettingsProvider } from '@/src/contexts/AppSettingsContext';
 import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
+import { FeedbackProvider } from '@/src/contexts/FeedbackContext';
 import { StatusBar } from 'expo-status-bar';
 import CustomSplashScreen from '@/components/SplashScreen';
+
+const TERMS_ACCEPTED_KEY = '@luminus:terms_accepted';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -58,10 +62,12 @@ function RootLayoutNav() {
   return (
     <AppSettingsProvider>
       <ThemeProvider>
-        <AuthProvider>
-          <StatusBar style="light" backgroundColor="#0F0F0F" />
-          <AuthGuard />
-        </AuthProvider>
+        <FeedbackProvider>
+          <AuthProvider>
+            <StatusBar style="light" backgroundColor="#0F0F0F" />
+            <AuthGuard />
+          </AuthProvider>
+        </FeedbackProvider>
       </ThemeProvider>
     </AppSettingsProvider>
   );
@@ -71,28 +77,65 @@ function AuthGuard() {
   const { isAuthenticated, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const [termsAccepted, setTermsAccepted] = useState<boolean | null>(null);
+  const [hasNavigated, setHasNavigated] = useState(false);
+
+  // Verifica se os termos foram aceitos
+  useEffect(() => {
+    checkTerms();
+  }, []);
+
+  const checkTerms = async () => {
+    try {
+      const accepted = await AsyncStorage.getItem(TERMS_ACCEPTED_KEY);
+      setTermsAccepted(accepted === 'true');
+    } catch (error) {
+      console.error('Erro ao verificar termos:', error);
+      setTermsAccepted(false);
+    }
+  };
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || termsAccepted === null || hasNavigated) return;
 
     const inAuthGroup = segments[0] === 'login' || segments[0] === 'forgot-password';
+    const inTermsScreen = segments[0] === 'terms';
+    const inTabsScreen = segments[0] === '(tabs)';
 
-    if (!isAuthenticated && !inAuthGroup) {
-      // Não autenticado → login
-      router.replace('/login');
-    } else if (isAuthenticated && inAuthGroup) {
-      // Autenticado mas está em tela de login → app
-      router.replace('/(tabs)');
+    // Prioridade 1: Se não aceitou termos E não está na tela de termos → vai para termos
+    if (!termsAccepted && !inTermsScreen) {
+      setHasNavigated(true);
+      router.replace('/terms');
+      return;
     }
-  }, [isAuthenticated, loading, segments]);
+
+    // Prioridade 2: Se aceitou termos mas não está autenticado E não está no login → vai para login
+    if (termsAccepted && !isAuthenticated && !inAuthGroup && !inTermsScreen) {
+      setHasNavigated(true);
+      router.replace('/login');
+      return;
+    }
+
+    // Prioridade 3: Se está autenticado E não está nas tabs → vai para app
+    if (isAuthenticated && !inTabsScreen) {
+      setHasNavigated(true);
+      router.replace('/(tabs)');
+      return;
+    }
+
+    // Reset hasNavigated após um tempo para permitir navegação futura se necessário
+    const timeout = setTimeout(() => setHasNavigated(false), 1000);
+    return () => clearTimeout(timeout);
+  }, [isAuthenticated, loading, segments, termsAccepted]);
 
   // Enquanto está carregando, não renderiza nada para evitar flash
-  if (loading) {
+  if (loading || termsAccepted === null) {
     return null;
   }
 
   return (
     <Stack>
+      <Stack.Screen name="terms" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

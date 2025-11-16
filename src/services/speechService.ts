@@ -1,8 +1,30 @@
 import * as Speech from 'expo-speech';
+import { Platform } from 'react-native';
+import { Audio } from 'expo-av';
 
 class SpeechService {
   private isSpeaking: boolean = false;
   private isPaused: boolean = false;
+  private audioInitialized: boolean = false;
+
+  // Inicializa configurações de áudio
+  private async initializeAudio(): Promise<void> {
+    if (this.audioInitialized) return;
+    
+    try {
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: false,
+        playThroughEarpieceAndroid: false,
+        allowsRecordingIOS: false,
+      });
+      
+      this.audioInitialized = true;
+    } catch (error) {
+      // Silencioso
+    }
+  }
 
 
   async speak(
@@ -17,15 +39,21 @@ class SpeechService {
     }
   ): Promise<void> {
     try {
+      await this.initializeAudio();
       await this.stop();
 
       this.isSpeaking = true;
       this.isPaused = false;
 
-      await Speech.speak(text, {
+      if (Platform.OS === 'android') {
+        await new Promise(resolve => setTimeout(resolve, 150));
+      }
+
+      const speechOptions: Speech.SpeechOptions = {
         language: options?.language || 'pt-BR',
         pitch: options?.pitch || 1.0,
-        rate: options?.rate || 1.0,
+        rate: options?.rate || 0.9,
+        volume: 1.0,
         onStart: () => {
           this.isSpeaking = true;
           options?.onStart?.();
@@ -44,7 +72,14 @@ class SpeechService {
           this.isPaused = false;
           options?.onError?.(new Error(String(error)));
         },
-      });
+      };
+
+      if (Platform.OS === 'android') {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      Speech.speak(text, speechOptions);
+      
     } catch (error) {
       this.isSpeaking = false;
       this.isPaused = false;
@@ -106,8 +141,8 @@ class SpeechService {
 
   async isAvailable(): Promise<boolean> {
     try {
-      const voices = await Speech.getAvailableVoicesAsync();
-      return voices.length > 0;
+      await Speech.isSpeakingAsync();
+      return true;
     } catch (error) {
       return false;
     }

@@ -95,7 +95,27 @@ export default function LoginScreen() {
 
       if (response.success) {
         await triggerFeedback(FeedbackType.SUCCESS);
-        router.replace('/(tabs)');
+        
+        if (isLogin) {
+          // Login bem-sucedido → vai para o app
+          router.replace('/(tabs)');
+        } else {
+          // Cadastro bem-sucedido → mostra mensagem e muda para login
+          Alert.alert(
+            'Conta criada com sucesso!',
+            'Agora faça login com suas credenciais.',
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  setIsLogin(true);
+                  setPassword('');
+                  setConfirmPassword('');
+                }
+              }
+            ]
+          );
+        }
       } else {
         await triggerFeedback(FeedbackType.ERROR);
         Alert.alert('Erro', response.error || 'Erro ao processar requisição');

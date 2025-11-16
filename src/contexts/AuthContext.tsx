@@ -49,9 +49,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const register = async (email: string, password: string, displayName?: string): Promise<AuthResponse> => {
     const response = await authService.register(email, password, displayName);
     
-    if (response.success && response.user) {
-      setUser(response.user);
-    }
+    // NÃO loga automaticamente após criar conta
+    // Usuário precisa fazer login manualmente
+    // if (response.success && response.user) {
+    //   setUser(response.user);
+    // }
     
     return response;
   };
