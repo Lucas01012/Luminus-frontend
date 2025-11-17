@@ -218,11 +218,11 @@ export default function HistoryScreen() {
                 resizeMode="cover"
               />
             )}
-            <ScrollView style={styles.contentScroll} nestedScrollEnabled>
+            <View style={styles.contentTextContainer}>
               <Text style={[styles.contentText, { color: theme.colors.text }]}>
                 {item.content}
               </Text>
-            </ScrollView>
+            </View>
             {item.metadata?.keywords && item.metadata.keywords.length > 0 && (
               <View style={styles.keywordsContainer}>
                 <Text style={[styles.keywordsLabel, { color: theme.colors.textSecondary }]}>
@@ -251,7 +251,7 @@ export default function HistoryScreen() {
               >
                 <FontAwesome 
                   name={isThisItemSpeaking ? "stop" : "volume-up"} 
-                  size={18} 
+                  size={16} 
                   color="#FFFFFF" 
                 />
                 <Text style={styles.actionButtonText}>
@@ -264,7 +264,7 @@ export default function HistoryScreen() {
                 onPress={() => handleShare(item)}
                 accessibilityLabel="Compartilhar item"
               >
-                <FontAwesome name="share-alt" size={18} color="#FFFFFF" />
+                <FontAwesome name="share-alt" size={16} color="#FFFFFF" />
                 <Text style={styles.actionButtonText}>Compartilhar</Text>
               </TouchableOpacity>
 
@@ -273,7 +273,7 @@ export default function HistoryScreen() {
                 onPress={() => handleDelete(item)}
                 accessibilityLabel="Excluir item do histórico"
               >
-                <FontAwesome name="trash" size={18} color="#FFFFFF" />
+                <FontAwesome name="trash" size={16} color="#FFFFFF" />
                 <Text style={styles.actionButtonText}>Excluir</Text>
               </TouchableOpacity>
             </View>
@@ -352,7 +352,7 @@ export default function HistoryScreen() {
             ]}>
               <FontAwesome 
                 name="file-text" 
-                size={24} 
+                size={20} 
                 color={activeCategory === 'documents' ? theme.colors.secondary : '#FFFFFF'} 
               />
             </View>
@@ -392,7 +392,7 @@ export default function HistoryScreen() {
             ]}>
               <FontAwesome 
                 name="image" 
-                size={24} 
+                size={20} 
                 color={activeCategory === 'images' ? theme.colors.info : '#FFFFFF'} 
               />
             </View>
@@ -531,25 +531,29 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 12,
     borderRadius: 16,
     borderWidth: 2,
-    gap: 12,
+    gap: 10,
+    minHeight: 80,
   },
   categoryIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   categoryInfo: {
     flex: 1,
+    minWidth: 0,
   },
   categoryTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     marginBottom: 2,
+    flexWrap: 'nowrap',
   },
   categoryCount: {
     fontSize: 14,
@@ -633,8 +637,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
   },
-  contentScroll: {
-    maxHeight: 300,
+  contentTextContainer: {
     marginBottom: 16,
   },
   contentText: {
@@ -666,7 +669,8 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
+    marginTop: 8,
   },
   actionButton: {
     flex: 1,
@@ -674,8 +678,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
+    paddingHorizontal: 10,
     borderRadius: 12,
-    gap: 8,
+    gap: 6,
+    minHeight: 48,
   },
   speakButton: {
     // Cor definida dinamicamente
@@ -685,7 +691,7 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '600',
   },
   emptyContainer: {

@@ -65,7 +65,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "EXPO_PUBLIC_API_URL": "http://10.0.2.2:5000"
+      "EXPO_PUBLIC_API_URL": "http://172.16.2.7:5000"
     }
   }
 }

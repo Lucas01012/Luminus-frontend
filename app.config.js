@@ -62,10 +62,7 @@ export default {
       typedRoutes: true
     },
     extra: {
-      // Use o IP da sua rede local para testar no celular físico
-      // Para emulador Android, use: http://10.0.2.2:5000
-      // Para simulador iOS, use: http://localhost:5000
-      EXPO_PUBLIC_API_URL: "http://192.168.68.109:5000"
+      EXPO_PUBLIC_API_URL: "http://172.16.2.7:5000"
     }
   }
 };
