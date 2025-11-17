@@ -101,6 +101,7 @@ function AuthGuard() {
     const inAuthGroup = segments[0] === 'login' || segments[0] === 'forgot-password';
     const inTermsScreen = segments[0] === 'terms';
     const inTabsScreen = segments[0] === '(tabs)';
+    const inResultsScreen = segments[0] === 'results';
 
     // Prioridade 1: Se não aceitou termos E não está na tela de termos → vai para termos
     if (!termsAccepted && !inTermsScreen) {
@@ -116,8 +117,8 @@ function AuthGuard() {
       return;
     }
 
-    // Prioridade 3: Se está autenticado E não está nas tabs → vai para app
-    if (isAuthenticated && !inTabsScreen) {
+    // Prioridade 3: Se está autenticado E não está nas tabs E não está em results → vai para app
+    if (isAuthenticated && !inTabsScreen && !inResultsScreen) {
       setHasNavigated(true);
       router.replace('/(tabs)');
       return;
@@ -140,7 +141,7 @@ function AuthGuard() {
       <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="results" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="results" options={{ headerShown: false }} />
     </Stack>
   );
 }
