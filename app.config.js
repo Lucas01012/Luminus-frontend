@@ -62,7 +62,7 @@ export default {
       typedRoutes: true
     },
     extra: {
-      EXPO_PUBLIC_API_URL: "http://172.16.2.7:5000"
+      EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL || "http://172.16.2.7:5000"
     }
   }
 };

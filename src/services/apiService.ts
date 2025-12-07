@@ -96,7 +96,7 @@ class ApiService {
     try {
       console.log('🔍 Testando conexão com:', BASE_URL);
       const startTime = Date.now();
-      await this.api.get('/', { timeout: 5000 });
+      await this.api.get('/', { timeout: 30000 }); // 30s para acordar o Render
       const duration = Date.now() - startTime;
       console.log(`✅ Conexão OK! (${duration}ms)`);
       return { 
@@ -109,7 +109,7 @@ class ApiService {
       let errorMessage = 'Erro ao conectar com o backend';
       
       if (error.code === 'ECONNABORTED') {
-        errorMessage = 'Timeout - Backend não respondeu em 5s';
+        errorMessage = 'Timeout - Backend não respondeu em 30s';
       } else if (error.code === 'ERR_NETWORK') {
         errorMessage = 'Backend não acessível. Verifique se está rodando.';
       } else if (error.response) {
@@ -181,12 +181,15 @@ class ApiService {
         });
       }
 
+      // Timeout maior para documentos (120s) vs imagens (60s)
+      const timeout = endpoint.includes('documento') ? 120000 : 60000;
+
       const response = await this.api.post(endpoint, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Accept': 'application/json',
         },
-        timeout: 60000,
+        timeout,
         transformRequest: [(data) => data],
       });
 

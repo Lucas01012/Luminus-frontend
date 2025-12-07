@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
 import { FeedbackProvider } from '@/src/contexts/FeedbackContext';
 import { StatusBar } from 'expo-status-bar';
 import CustomSplashScreen from '@/components/SplashScreen';
+import { apiService } from '@/src/services/apiService';
 
 const TERMS_ACCEPTED_KEY = '@luminus:terms_accepted';
 
@@ -35,6 +36,25 @@ export default function RootLayout() {
   });
 
   const [showSplash, setShowSplash] = useState(true);
+
+  // Acordar o backend quando o app carregar
+  useEffect(() => {
+    wakeUpBackend();
+  }, []);
+
+  const wakeUpBackend = async () => {
+    try {
+      console.log('🔄 Acordando backend (pode demorar até 30s no Render)...');
+      const result = await apiService.testConnection();
+      if (result.success) {
+        console.log(`✅ Backend acordado! (${result.message})`);
+      } else {
+        console.log('⚠️ Backend pode estar dormindo:', result.message);
+      }
+    } catch (error) {
+      console.log('⚠️ Erro ao acordar backend, tentará novamente nas requisições');
+    }
+  };
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {

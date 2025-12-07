@@ -13,6 +13,10 @@ class DocumentService {
     options?: DocumentProcessingOptions
   ): Promise<{ success: boolean; data?: DocumentResponse; error?: string }> {
     try {
+      // Acordar o backend antes de processar (importante para Render free tier)
+      console.log('🔄 Verificando conexão com backend...');
+      await apiService.testConnection();
+      
       const file = {
         uri: documentUri,
         type: documentType,
