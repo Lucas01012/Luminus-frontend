@@ -114,7 +114,8 @@ export default function DocumentsScreen() {
       params: { 
         documentData: JSON.stringify(doc.result),
         type: 'document',
-        title: doc.name 
+        title: doc.name,
+        fromHistory: 'true' // Indica que veio do histórico/recente
       }
     });
   };

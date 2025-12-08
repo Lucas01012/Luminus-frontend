@@ -81,7 +81,7 @@ export default function GalleryScreen() {
           <View style={styles.iconContainer}>
             <FontAwesome 
               name="photo" 
-              size={64} 
+              size={80} 
               color={theme.colors.primary}
             />
           </View>
@@ -137,6 +137,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 20,
     paddingTop: 16,
+    justifyContent: 'center',
   },
   header: {
     marginBottom: 28,

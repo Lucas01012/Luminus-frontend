@@ -91,26 +91,27 @@ function AuthGuard() {
   const { isAuthenticated, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const [termsAccepted, setTermsAccepted] = useState<boolean | null>(null);
+  // TEMPORÁRIO: Para apresentação - sempre começa como false para mostrar termos
+  const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
   const [hasNavigated, setHasNavigated] = useState(false);
 
   // Verifica se os termos foram aceitos
-  useEffect(() => {
-    checkTerms();
-  }, []);
+  // useEffect(() => {
+  //   checkTerms();
+  // }, []);
 
-  const checkTerms = async () => {
-    try {
-      const accepted = await AsyncStorage.getItem(TERMS_ACCEPTED_KEY);
-      setTermsAccepted(accepted === 'true');
-    } catch (error) {
-      console.error('Erro ao verificar termos:', error);
-      setTermsAccepted(false);
-    }
-  };
+  // const checkTerms = async () => {
+  //   try {
+  //     const accepted = await AsyncStorage.getItem(TERMS_ACCEPTED_KEY);
+  //     setTermsAccepted(accepted === 'true');
+  //   } catch (error) {
+  //     console.error('Erro ao verificar termos:', error);
+  //     setTermsAccepted(false);
+  //   }
+  // };
 
   useEffect(() => {
-    if (loading || termsAccepted === null || hasNavigated) return;
+    if (loading || hasNavigated) return;
 
     const inAuthGroup = segments[0] === 'login' || segments[0] === 'forgot-password';
     const inTermsScreen = segments[0] === 'terms';
@@ -144,7 +145,7 @@ function AuthGuard() {
   }, [isAuthenticated, loading, segments, termsAccepted]);
 
   // Enquanto está carregando, não renderiza nada para evitar flash
-  if (loading || termsAccepted === null) {
+  if (loading) {
     return null;
   }
 

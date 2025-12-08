@@ -53,7 +53,10 @@ export default function ResultsScreen() {
           source: params.type || 'unknown',
         };
         setResult(resultData);
-        saveToHistory(resultData);
+        // Só salva se não vier do histórico
+        if (params.fromHistory !== 'true') {
+          saveToHistory(resultData);
+        }
       } catch (error) {
         console.error('Erro ao carregar análise:', error);
       }
@@ -66,7 +69,10 @@ export default function ResultsScreen() {
           title: params.title || 'Documento',
         };
         setResult(resultData);
-        saveToHistory(resultData);
+        // Só salva se não vier do histórico
+        if (params.fromHistory !== 'true') {
+          saveToHistory(resultData);
+        }
       } catch (error) {
         console.error('Erro ao carregar documento:', error);
       }

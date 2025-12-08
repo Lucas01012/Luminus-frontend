@@ -26,7 +26,9 @@ export default function TermsScreen() {
     if (!agreed) return;
 
     try {
-      await AsyncStorage.setItem(TERMS_ACCEPTED_KEY, 'true');
+      // TEMPORÁRIO: Para apresentação - não salva a aceitação dos termos
+      // await AsyncStorage.setItem(TERMS_ACCEPTED_KEY, 'true');
+      
       // Após aceitar termos, vai para login (não para as tabs)
       router.replace('/login');
     } catch (error) {
