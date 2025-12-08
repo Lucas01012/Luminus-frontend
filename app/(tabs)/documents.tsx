@@ -124,28 +124,6 @@ export default function DocumentsScreen() {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.iconContainer}>
-          <FontAwesome 
-            name="file-text-o" 
-            size={48} 
-            color={theme.colors.primary}
-          />
-        </View>
-        <Text 
-          style={[styles.title, { color: theme.colors.text }]}
-          accessibilityRole="header"
-        >
-          Documentos
-        </Text>
-        <Text 
-          style={[styles.subtitle, { color: theme.colors.textSecondary }]}
-        >
-          Leia e compreenda documentos PDF e DOCX
-        </Text>
-      </View>
-
       {/* Botão de seleção de documento */}
       <Card variant="elevated" style={styles.uploadCard}>
         <TouchableOpacity 

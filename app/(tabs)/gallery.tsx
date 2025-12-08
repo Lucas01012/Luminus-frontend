@@ -77,20 +77,6 @@ export default function GalleryScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Text 
-            style={[styles.title, { color: theme.colors.text }]}
-            accessibilityRole="header"
-          >
-            Galeria de Imagens
-          </Text>
-          <Text 
-            style={[styles.subtitle, { color: theme.colors.textSecondary }]}
-          >
-            Selecione uma imagem para análise
-          </Text>
-        </View>
-
         <Card variant="elevated" style={styles.selectCard}>
           <View style={styles.iconContainer}>
             <FontAwesome 

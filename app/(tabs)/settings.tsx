@@ -134,17 +134,6 @@ export default function SettingsScreen() {
           },
           icon: 'bell',
         },
-        {
-          key: 'autoSave',
-          title: 'Salvamento Automático',
-          description: 'Salvar resultados automaticamente',
-          value: settings.autoSave,
-          onToggle: () => {
-            triggerFeedback(FeedbackType.LIGHT);
-            updateSetting('autoSave', !settings.autoSave);
-          },
-          icon: 'save',
-        },
       ],
     },
   ];
@@ -174,21 +163,6 @@ export default function SettingsScreen() {
       contentContainerStyle={styles.content}
       accessibilityLabel="Configurações do Luminus"
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text 
-          style={[styles.title, { color: theme.colors.text }]}
-          accessibilityRole="header"
-        >
-          Configurações
-        </Text>
-        <Text 
-          style={[styles.subtitle, { color: theme.colors.textSecondary }]}
-        >
-          Personalize sua experiência no Luminus
-        </Text>
-      </View>
-
       {/* Seção de Autenticação */}
       <View style={styles.section}>
         <Text 

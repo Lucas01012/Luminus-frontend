@@ -355,20 +355,6 @@ export default function HistoryScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.header, { backgroundColor: theme.colors.backgroundCard, borderBottomColor: theme.colors.outline }]}>
-        <View style={styles.headerTop}>
-          <View style={[styles.headerIconContainer, { backgroundColor: theme.colors.primary }]}>
-            <FontAwesome name="history" size={36} color="#FFFFFF" />
-          </View>
-          <View style={styles.headerTextContainer}>
-            <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
-              Histórico
-            </Text>
-            <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
-              {history.length} {history.length === 1 ? 'item' : 'itens'}
-            </Text>
-          </View>
-        </View>
-
         <View style={[styles.searchContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}>
           <FontAwesome name="search" size={18} color={theme.colors.textSecondary} style={styles.searchIcon} />
           <TextInput
