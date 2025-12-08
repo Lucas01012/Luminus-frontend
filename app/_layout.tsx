@@ -44,15 +44,9 @@ export default function RootLayout() {
 
   const wakeUpBackend = async () => {
     try {
-      console.log('🔄 Acordando backend (pode demorar até 30s no Render)...');
-      const result = await apiService.testConnection();
-      if (result.success) {
-        console.log(`✅ Backend acordado! (${result.message})`);
-      } else {
-        console.log('⚠️ Backend pode estar dormindo:', result.message);
-      }
+      await apiService.testConnection();
     } catch (error) {
-      console.log('⚠️ Erro ao acordar backend, tentará novamente nas requisições');
+      // Silencioso - tentará novamente nas requisições
     }
   };
 

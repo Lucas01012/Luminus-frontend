@@ -11,13 +11,19 @@ import {
   RefreshControl,
   ActivityIndicator,
   Share,
+  Modal,
+  Dimensions,
 } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { useTheme } from '@/src/theme/ThemeProvider';
 import { historyService } from '@/src/services/historyService';
 import { HistoryItem } from '@/src/models';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSpeech } from '@/src/hooks/useSpeech';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function HistoryScreen() {
   const { theme } = useTheme();
@@ -28,6 +34,7 @@ export default function HistoryScreen() {
   const [loading, setLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'documents' | 'images' | null>(null);
   const [speakingItemId, setSpeakingItemId] = useState<string | null>(null);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   
   const { speak, stop, isSpeaking } = useSpeech({ autoStop: true });
 
@@ -67,8 +74,8 @@ export default function HistoryScreen() {
       await stop();
       setSpeakingItemId(item.id);
       
-      // Monta o texto para falar
-      const textToSpeak = `${item.title}. ${item.content}`;
+      // Lê apenas o conteúdo, sem o título
+      const textToSpeak = item.content;
       
       try {
         await speak(textToSpeak);
@@ -82,10 +89,6 @@ export default function HistoryScreen() {
 
   const handleShare = async (item: HistoryItem) => {
     try {
-      const shareOptions: any = {
-        title: `Luminus - ${item.title}`,
-      };
-
       let message = `📱 Luminus - Assistente Visual Inteligente\n\n`;
       message += `📌 ${item.title}\n\n`;
       message += `${item.content}\n\n`;
@@ -94,19 +97,63 @@ export default function HistoryScreen() {
         message += `🔑 Palavras-chave: ${item.metadata.keywords.join(', ')}\n\n`;
       }
       
-      message += `📅 ${formatDate(item.timestamp)}`;
-
-      // Se for uma imagem, inclui a URI para compartilhamento
-      if (item.type === 'image' && item.imageUri) {
-        shareOptions.url = item.imageUri;
-        shareOptions.message = message;
-      } else {
-        shareOptions.message = message;
+      if (item.metadata?.pages) {
+        message += `📄 Páginas: ${item.metadata.pages}\n\n`;
       }
+      
+      message += `📅 ${formatDate(item.timestamp)}\n`;
+      message += `✨ Gerado pelo Luminus`;
 
-      await Share.share(shareOptions);
+      // Se for uma imagem, compartilha imagem + análise juntos
+      if (item.type === 'image' && item.imageUri) {
+        const isAvailable = await Sharing.isAvailableAsync();
+        
+        if (isAvailable) {
+          try {
+            // Cria um arquivo temporário com o texto da análise
+            const textFileName = `${FileSystem.cacheDirectory}luminus_analise_${Date.now()}.txt`;
+            await FileSystem.writeAsStringAsync(textFileName, message, {
+              encoding: FileSystem.EncodingType.UTF8,
+            });
+
+            // Compartilha a imagem com o arquivo de texto
+            // Nota: Nem todos os apps suportam múltiplos arquivos, mas WhatsApp suporta
+            await Sharing.shareAsync(item.imageUri, {
+              mimeType: 'image/jpeg',
+              dialogTitle: `Compartilhar - ${item.title}`,
+              UTI: 'public.jpeg',
+            });
+
+            // Limpa o arquivo temporário após compartilhar
+            try {
+              await FileSystem.deleteAsync(textFileName, { idempotent: true });
+            } catch (cleanupError) {
+              // Ignora erros de limpeza
+            }
+          } catch (sharingError) {
+            // Fallback: usa Share.share com URL da imagem + mensagem
+            await Share.share({
+              message: message,
+              url: item.imageUri,
+              title: `Luminus - ${item.title}`,
+            });
+          }
+        } else {
+          // Fallback: Share.share com imagem + texto
+          await Share.share({
+            message: message,
+            url: item.imageUri,
+            title: `Luminus - ${item.title}`,
+          });
+        }
+      } else {
+        // Para documentos: apenas texto
+        await Share.share({
+          message: message,
+          title: `Luminus - ${item.title}`,
+        });
+      }
     } catch (error) {
-      console.error('Erro ao compartilhar:', error);
       Alert.alert('Erro', 'Não foi possível compartilhar o item.');
     }
   };
@@ -212,11 +259,17 @@ export default function HistoryScreen() {
         {isExpanded && (
           <View style={[styles.itemContent, { borderTopColor: theme.colors.outline }]}>
             {item.imageUri && (
-              <Image
-                source={{ uri: item.imageUri }}
-                style={[styles.contentImage, { borderColor: theme.colors.outline }]}
-                resizeMode="cover"
-              />
+              <TouchableOpacity
+                onPress={() => setFullscreenImage(item.imageUri!)}
+                activeOpacity={0.9}
+                accessibilityLabel="Abrir imagem em tela cheia"
+              >
+                <Image
+                  source={{ uri: item.imageUri }}
+                  style={[styles.contentImage, { borderColor: theme.colors.outline }]}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
             )}
             <View style={styles.contentTextContainer}>
               <Text style={[styles.contentText, { color: theme.colors.text }]}>
@@ -466,6 +519,32 @@ export default function HistoryScreen() {
           filteredHistory.map(renderHistoryItem)
         )}
       </ScrollView>
+
+      {/* Modal de imagem em tela cheia */}
+      <Modal
+        visible={!!fullscreenImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setFullscreenImage(null)}
+      >
+        <View style={styles.fullscreenContainer}>
+          <TouchableOpacity
+            style={styles.fullscreenCloseButton}
+            onPress={() => setFullscreenImage(null)}
+            accessibilityLabel="Fechar visualização"
+          >
+            <FontAwesome name="times" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+          
+          {fullscreenImage && (
+            <Image
+              source={{ uri: fullscreenImage }}
+              style={styles.fullscreenImage}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -718,5 +797,27 @@ const styles = StyleSheet.create({
     fontSize: 17,
     textAlign: 'center',
     lineHeight: 26,
+  },
+  fullscreenContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenCloseButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
   },
 });

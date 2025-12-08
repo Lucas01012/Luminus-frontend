@@ -10,7 +10,6 @@ function getBaseURL(): string {
   const configURL = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL;
   
   if (configURL) {
-    console.log('🌐 API URL (from config):', configURL);
     return configURL;
   }
   
@@ -25,7 +24,6 @@ function getBaseURL(): string {
     defaultURL = 'http://localhost:5000';
   }
   
-  console.log('🌐 API URL (default):', defaultURL);
   return defaultURL;
 }
 
@@ -35,10 +33,6 @@ class ApiService {
   private api: AxiosInstance;
 
   constructor() {
-    console.log('🚀 Inicializando ApiService...');
-    console.log('📱 Platform:', Platform.OS);
-    console.log('🌐 Base URL:', BASE_URL);
-    
     this.api = axios.create({
       baseURL: BASE_URL,
       timeout: 30000,
@@ -49,7 +43,6 @@ class ApiService {
 
     this.api.interceptors.request.use(
       async (config) => {
-        console.log('📤 Request:', config.method?.toUpperCase(), config.url);
         const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
@@ -57,29 +50,22 @@ class ApiService {
         return config;
       },
       (error) => {
-        console.error('❌ Request Error:', error.message);
         return Promise.reject(error);
       }
     );
 
     this.api.interceptors.response.use(
       (response) => {
-        console.log('✅ Response:', response.status, response.config.url);
         return response;
       },
       async (error) => {
+        // Log silencioso apenas para debug interno
         if (error.code === 'ECONNABORTED') {
-          console.error('⏱️ Timeout Error:', error.config?.url);
+          // Timeout - não loga no console do usuário
         } else if (error.code === 'ERR_NETWORK') {
-          console.error('🌐 Network Error - Backend não acessível:', BASE_URL);
-          console.error('💡 Verifique se:');
-          console.error('   1. O backend Flask está rodando');
-          console.error('   2. O IP está correto para seu dispositivo/emulador');
-          console.error('   3. O firewall não está bloqueando a conexão');
+          // Network error - não loga no console do usuário
         } else if (error.response) {
-          console.error('❌ Response Error:', error.response.status, error.config?.url);
-        } else {
-          console.error('❌ Unknown Error:', error.message);
+          // Response error - não loga no console do usuário
         }
         
         if (error.response?.status === 401) {
@@ -94,18 +80,15 @@ class ApiService {
 
   async testConnection(): Promise<{ success: boolean; message?: string; url?: string }> {
     try {
-      console.log('🔍 Testando conexão com:', BASE_URL);
       const startTime = Date.now();
       await this.api.get('/', { timeout: 30000 }); // 30s para acordar o Render
       const duration = Date.now() - startTime;
-      console.log(`✅ Conexão OK! (${duration}ms)`);
       return { 
         success: true, 
         message: `Conectado em ${duration}ms`,
         url: BASE_URL 
       };
     } catch (error: any) {
-      console.error('❌ Falha na conexão:', error.message);
       let errorMessage = 'Erro ao conectar com o backend';
       
       if (error.code === 'ECONNABORTED') {

@@ -27,30 +27,20 @@ export const SpeechButton: React.FC<SpeechButtonProps> = ({
   const { speak, stop, isSpeaking } = useSpeech({ autoStop: true });
 
   const handlePress = async () => {
-    console.log('🎤 SpeechButton: Botão pressionado', { 
-      isSpeaking, 
-      textLength: text?.length,
-      hasText: !!text 
-    });
-
     if (isSpeaking) {
-      console.log('🎤 SpeechButton: Parando fala...');
       await stop();
       onStop?.();
     } else {
       if (!text || text.trim().length === 0) {
-        console.warn('🎤 SpeechButton: Texto vazio, não pode falar');
         return;
       }
       
-      console.log('🎤 SpeechButton: Iniciando fala...', text.substring(0, 50));
       onStart?.();
       
       try {
         await speak(text);
-        console.log('🎤 SpeechButton: Fala iniciada com sucesso');
       } catch (error) {
-        console.error('🎤 SpeechButton: Erro ao falar:', error);
+        // Erro silencioso
       }
     }
   };

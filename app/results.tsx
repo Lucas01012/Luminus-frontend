@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 import { useTheme } from '@/src/theme/ThemeProvider';
 import { Button, Card } from '@/src/components/ui';
@@ -95,27 +97,25 @@ export default function ResultsScreen() {
     } else if (data.type === 'document') {
       const docData = data.data;
       
-      if (docData.metadata?.title) {
-        return docData.metadata.title;
-      }
-      
+      // Priorizar a primeira frase do resumo (igual às imagens)
       if (docData.resumo) {
-        const firstLine = docData.resumo.split(/[\n.!?]/)[0].trim();
-        if (firstLine.length > 60) {
-          return firstLine.substring(0, 60) + '...';
+        const firstSentence = docData.resumo.split(/[.!?\n]/)[0].trim();
+        if (firstSentence.length > 60) {
+          return firstSentence.substring(0, 60) + '...';
         }
-        return firstLine || 'Documento processado';
+        return firstSentence || 'Documento processado';
       }
       
+      // Fallback: primeira frase do conteúdo
       if (docData.text_content) {
-        const firstLine = docData.text_content.split(/[\n.!?]/)[0].trim();
-        if (firstLine.length > 60) {
-          return firstLine.substring(0, 60) + '...';
+        const firstSentence = docData.text_content.split(/[.!?\n]/)[0].trim();
+        if (firstSentence.length > 60) {
+          return firstSentence.substring(0, 60) + '...';
         }
-        return firstLine || 'Documento processado';
+        return firstSentence || 'Documento processado';
       }
       
-      return data.title || 'Documento processado';
+      return 'Documento processado';
     }
     
     return 'Item sem título';
@@ -256,41 +256,73 @@ export default function ResultsScreen() {
     try {
       await triggerFeedback(FeedbackType.LIGHT);
       
-      let message = '';
-      const shareOptions: any = {
-        title: 'Resultado do Luminus',
-      };
-      
       if (result?.type === 'image') {
-        message = `Análise do Luminus:\n\n`;
-        if (result.analysis?.objeto) {
-          message += `Descrição: ${result.analysis.objeto}\n\n`;
-        }
-        if (result.text) {
-          message += `Texto extraído: ${result.text}\n\n`;
-        }
-        message += `Gerado pelo Luminus - Assistente Visual Inteligente`;
+        // Para imagens: compartilha a imagem + análise
+        let message = `📱 Luminus - Assistente Visual Inteligente\n\n`;
         
-        // Adiciona a imagem ao compartilhamento
-        if (result.imageUri) {
-          shareOptions.url = result.imageUri;
-          shareOptions.message = message;
+        if (result.analysis?.objeto) {
+          message += `📝 Análise:\n${result.analysis.objeto}\n\n`;
+        }
+        
+        if (result.text) {
+          message += `📄 Texto extraído:\n${result.text}\n\n`;
+        }
+        
+        message += `✨ Gerado pelo Luminus`;
+
+        // Verifica se o compartilhamento está disponível
+        const isAvailable = await Sharing.isAvailableAsync();
+        
+        if (result.imageUri && isAvailable) {
+          try {
+            // Compartilha a imagem com o texto da análise em uma única etapa
+            await Sharing.shareAsync(result.imageUri, {
+              mimeType: 'image/jpeg',
+              dialogTitle: `Compartilhar - Análise do Luminus`,
+              UTI: 'public.jpeg',
+            });
+          } catch (sharingError) {
+            // Fallback: usa Share.share com URL da imagem + mensagem
+            await Share.share({
+              message: message,
+              url: result.imageUri,
+              title: 'Análise do Luminus',
+            });
+          }
         } else {
-          shareOptions.message = message;
+          // Fallback: Share.share com imagem + texto
+          await Share.share({
+            message: message,
+            url: result.imageUri,
+            title: 'Análise do Luminus',
+          });
         }
       } else if (result?.type === 'document') {
-        message = `Documento processado pelo Luminus:\n\n`;
-        message += `Título: ${result.title}\n`;
-        if (result.data.resumo?.resumo) {
-          message += `Resumo: ${result.data.resumo.resumo}\n\n`;
+        // Para documentos: apenas texto da análise
+        let message = `📱 Luminus - Assistente Visual Inteligente\n\n`;
+        message += `📄 Documento: ${result.title}\n\n`;
+        
+        if (result.data.resumo) {
+          message += `📝 Resumo:\n${result.data.resumo}\n\n`;
         }
-        message += `Gerado pelo Luminus - Assistente Visual Inteligente`;
-        shareOptions.message = message;
-      }
+        
+        if (result.data.palavras_chave && result.data.palavras_chave.length > 0) {
+          message += `🔑 Palavras-chave: ${result.data.palavras_chave.join(', ')}\n\n`;
+        }
+        
+        if (result.data.metadata?.total_pages) {
+          message += `📄 Total de páginas: ${result.data.metadata.total_pages}\n\n`;
+        }
+        
+        message += `✨ Gerado pelo Luminus`;
 
-      await Share.share(shareOptions);
+        await Share.share({
+          message: message,
+          title: 'Documento do Luminus',
+        });
+      }
     } catch (error) {
-      console.error('Erro ao compartilhar:', error);
+      Alert.alert('Erro', 'Não foi possível compartilhar o resultado.');
     }
   };
 
