@@ -34,10 +34,40 @@ const FeedbackContext = createContext<FeedbackContextData>({} as FeedbackContext
 export const FeedbackProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isVibrationEnabled, setIsVibrationEnabled] = useState(true);
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  const [soundObject, setSoundObject] = useState<Audio.Sound | null>(null);
 
   useEffect(() => {
     loadPreferences();
+    preloadSound();
+    
+    // Cleanup do som ao desmontar
+    return () => {
+      if (soundObject) {
+        soundObject.unloadAsync();
+      }
+    };
   }, []);
+
+  const preloadSound = async () => {
+    try {
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+        interruptionModeIOS: 1,
+        interruptionModeAndroid: 1,
+      });
+
+      const { sound } = await Audio.Sound.createAsync(
+        require('@/assets/sounds/click.mp3'),
+        { shouldPlay: false, volume: 0.8 }
+      );
+      
+      setSoundObject(sound);
+    } catch (error) {
+      console.log('Erro ao pré-carregar som:', error);
+    }
+  };
 
   const loadPreferences = async () => {
     try {
@@ -95,27 +125,24 @@ export const FeedbackProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const playSound = useCallback(async (type: FeedbackType) => {
     try {
-      // Configura modo de áudio
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
-      });
-
-      // Usa expo-av para tocar um som curto
-      // Por enquanto, desabilitado pois precisa de arquivo de áudio
-      // Quando adicionar arquivos de som, descomentar aqui
-      console.log('Som de feedback:', type);
+      if (soundObject) {
+        // Reinicia a posição para tocar do início
+        await soundObject.setPositionAsync(0);
+        await soundObject.playAsync();
+      } else {
+        // Fallback se o som não foi pré-carregado
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
     } catch (error) {
-      console.warn('Erro ao reproduzir som:', error);
+      console.log('Erro no playSound:', error);
     }
-  }, []);
+  }, [soundObject]);
 
   const triggerFeedback = useCallback(async (
     type: FeedbackType, 
     options: FeedbackOptions = {}
   ) => {
-    const { vibrate = true, sound = false } = options;
+    const { vibrate = true, sound = true } = options;
 
     try {
       if (vibrate && isVibrationEnabled) {
@@ -126,7 +153,7 @@ export const FeedbackProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         await playSound(type);
       }
     } catch (error) {
-      console.warn('Erro ao executar feedback:', error);
+      // Silenciosamente ignora erros
     }
   }, [isVibrationEnabled, isSoundEnabled, triggerVibration, playSound]);
 

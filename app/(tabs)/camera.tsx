@@ -162,7 +162,7 @@ export default function CameraScreen() {
             accessibilityLabel="Voltar"
             accessibilityRole="button"
           >
-            <FontAwesome name="arrow-left" size={20} color={theme.colors.textInverse} />
+            <FontAwesome name="arrow-left" size={20} color="#FFFFFF" />
           </TouchableOpacity>
 
           {/* Botão de flash */}
@@ -175,7 +175,7 @@ export default function CameraScreen() {
             <FontAwesome 
               name={flashMode === 'on' ? 'flash' : flashMode === 'auto' ? 'magic' : 'flash'} 
               size={20} 
-              color={flashMode === 'off' ? theme.colors.textSecondary : theme.colors.warning} 
+              color={flashMode === 'off' ? '#FFFFFF' : theme.colors.warning} 
             />
           </TouchableOpacity>
         </View>

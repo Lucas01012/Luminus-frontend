@@ -153,7 +153,7 @@ export default function DocumentsScreen() {
           >
             {documentProcessor.loading 
               ? 'Extraindo texto e gerando resumo...' 
-              : 'PDF, DOCX ou imagens • Apenas 1ª página'
+              : ''
             }
           </Text>
         </TouchableOpacity>
@@ -303,66 +303,6 @@ export default function DocumentsScreen() {
           ))}
         </View>
       )}
-
-      {/* Recursos disponíveis */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <FontAwesome name="magic" size={24} color={theme.colors.warning} />
-          <Text 
-            style={[styles.sectionTitle, { color: theme.colors.text }]}
-          >
-            O que você pode fazer
-          </Text>
-        </View>
-        <Card variant="outlined" style={styles.featuresCard}>
-          <View style={styles.featuresList}>
-            <View style={styles.featureRow}>
-              <View style={[styles.featureBullet, { backgroundColor: theme.colors.success + '20' }]}>
-                <FontAwesome name="bolt" size={16} color={theme.colors.success} />
-              </View>
-              <Text style={[styles.featureItem, { color: theme.colors.text }]}>
-                Leitura rápida da primeira página
-              </Text>
-            </View>
-            
-            <View style={styles.featureRow}>
-              <View style={[styles.featureBullet, { backgroundColor: theme.colors.info + '20' }]}>
-                <FontAwesome name="lightbulb-o" size={16} color={theme.colors.info} />
-              </View>
-              <Text style={[styles.featureItem, { color: theme.colors.text }]}>
-                Resumo inteligente com IA
-              </Text>
-            </View>
-            
-            <View style={styles.featureRow}>
-              <View style={[styles.featureBullet, { backgroundColor: theme.colors.warning + '20' }]}>
-                <FontAwesome name="search" size={16} color={theme.colors.warning} />
-              </View>
-              <Text style={[styles.featureItem, { color: theme.colors.text }]}>
-                Extração completa de texto
-              </Text>
-            </View>
-            
-            <View style={styles.featureRow}>
-              <View style={[styles.featureBullet, { backgroundColor: theme.colors.secondary + '20' }]}>
-                <FontAwesome name="picture-o" size={16} color={theme.colors.secondary} />
-              </View>
-              <Text style={[styles.featureItem, { color: theme.colors.text }]}>
-                OCR para documentos escaneados
-              </Text>
-            </View>
-            
-            <View style={styles.featureRow}>
-              <View style={[styles.featureBullet, { backgroundColor: theme.colors.primary + '20' }]}>
-                <FontAwesome name="volume-up" size={16} color={theme.colors.primary} />
-              </View>
-              <Text style={[styles.featureItem, { color: theme.colors.text }]}>
-                Conversão para áudio (TTS)
-              </Text>
-            </View>
-          </View>
-        </Card>
-      </View>
     </ScrollView>
   );
 }
